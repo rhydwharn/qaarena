@@ -1,0 +1,263 @@
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { useAuth } from '../context/AuthContext';
+import { BookOpen, Download, Bug, Radio, MessageSquare, BookMarked, Calendar, Trophy } from 'lucide-react';
+
+export default function Landing() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(formData.email, formData.password);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const features = [
+    {
+      icon: <Download className="h-8 w-8" />,
+      title: 'Download QA Materials',
+      description: 'Access comprehensive study materials, guides, and resources for your QA journey.',
+      color: 'bg-teal-500',
+      link: '/materials'
+    },
+    {
+      icon: <Bug className="h-8 w-8" />,
+      title: 'Interactive Bug Hunting Application',
+      description: 'Practice finding bugs in real-world scenarios with our interactive bug hunting sessions.',
+      color: 'bg-red-500',
+      link: '/bug-hunting'
+    },
+    {
+      icon: <Radio className="h-8 w-8" />,
+      title: 'QA Live Quizzes',
+      description: 'Join live quiz sessions and compete with other QA professionals in real-time.',
+      color: 'bg-green-500',
+      link: '/register'
+    },
+    {
+      icon: <MessageSquare className="h-8 w-8" />,
+      title: 'Interview Questions',
+      description: 'Prepare for your next QA interview with our curated collection of questions and answers.',
+      color: 'bg-purple-500',
+      link: '/interviews'
+    },
+    {
+      icon: <BookMarked className="h-8 w-8" />,
+      title: 'QA Jargons & Meanings',
+      description: 'Master QA terminology with our comprehensive glossary of testing jargons and definitions.',
+      color: 'bg-yellow-500',
+      link: '/jargons'
+    },
+    {
+      icon: <Calendar className="h-8 w-8" />,
+      title: 'Events',
+      description: 'Stay updated with upcoming QA events, webinars, and community meetups.',
+      color: 'bg-cyan-500',
+      link: '/events'
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/web_logo.png" alt="QA UNPLUGGED HAVEN" className="h-10 w-10 object-contain rounded-lg" />
+            <span className="text-xl font-bold text-gray-900">QA UNPLUGGED HAVEN</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/events">
+              <Button variant="ghost">Events</Button>
+            </Link>
+            <Link to="/register">
+              <Button className="bg-teal-600 hover:bg-teal-700">Sign Up</Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="grid lg:grid-cols-3 gap-10">
+          {/* Left & Center - Main Content (2 columns) */}
+          <div className="lg:col-span-2">
+            {/* Hero Section */}
+            <div className="mb-12">
+              <h1 className="text-5xl font-bold text-gray-900 mb-4">
+                Master Software Quality Assurance with ease
+              </h1>
+              <p className="text-xl text-gray-600 mb-8 max-w-2xl">
+                Elevate your QA skills with interactive quizzes, real-world scenarios, and ISTQB-certified content.
+              </p>
+              <div className="flex gap-6 mb-12">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-teal-600">100+</div>
+                  <div className="text-sm text-gray-600">Active Learners</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-teal-600">50+</div>
+                  <div className="text-sm text-gray-600">Questions</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-teal-600">ISTQB</div>
+                  <div className="text-sm text-gray-600">Certified</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Features Grid - 2 per row */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">What We Offer</h2>
+              <div className="grid grid-cols-2 gap-5">
+                {features.map((feature, idx) => (
+                  <Card key={idx} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="h-12 w-12 bg-teal-100 rounded-lg flex items-center justify-center text-teal-600 mb-3">
+                        {feature.icon}
+                      </div>
+                      <CardTitle className="text-base">{feature.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600">{feature.description}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Login Card */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24">
+              <Card className="shadow-lg">
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4">
+                    <img src="/web_logo.png" alt="QA UNPLUGGED HAVEN" className="h-16 w-16 object-contain rounded-xl" />
+                  </div>
+                  <CardTitle className="text-xl">Start Your QA Journey</CardTitle>
+                  <p className="text-sm text-gray-600 mt-2">Login to access 500+ questions</p>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {error && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-sm text-red-600">{error}</p>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-teal-600 hover:bg-teal-700" 
+                      disabled={loading}
+                    >
+                      {loading ? 'Logging in...' : 'Login'}
+                    </Button>
+
+                    <p className="text-center text-sm text-gray-600">
+                      Don't have an account?{' '}
+                      <Link to="/register" className="text-teal-600 hover:underline">
+                        Sign up
+                      </Link>
+                    </p>
+                  </form>
+
+                  <div className="mt-6 pt-6 border-t">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Questions</span>
+                        <span className="font-bold text-teal-600">50+</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Categories</span>
+                        <span className="font-bold text-teal-600">3</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Access</span>
+                        <span className="font-bold text-teal-600">24/7</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-50 border-t border-gray-200 mt-24">
+        <div className="container mx-auto px-6 py-12">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-3">
+                <img src="/web_logo.png" alt="QA UNPLUGGED HAVEN" className="h-8 w-8 object-contain rounded-lg" />
+                <span className="text-lg font-bold text-gray-900">QA UNPLUGGED HAVEN</span>
+              </div>
+              <p className="text-gray-600 text-sm max-w-sm">Empowering QA professionals worldwide with quality learning resources.</p>
+            </div>
+            <div>
+              <h4 className="text-gray-900 font-semibold mb-3 text-sm">Quick Links</h4>
+              <ul className="space-y-2 text-gray-600 text-sm">
+                <li><Link to="/events" className="hover:text-teal-600">Events</Link></li>
+                <li><Link to="/register" className="hover:text-teal-600">Sign Up</Link></li>
+                <li><Link to="/login" className="hover:text-teal-600">Login</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-gray-900 font-semibold mb-3 text-sm">Resources</h4>
+              <ul className="space-y-2 text-gray-600 text-sm">
+                <li className="hover:text-teal-600 cursor-pointer">QA Materials</li>
+                <li className="hover:text-teal-600 cursor-pointer">Interview Prep</li>
+                <li className="hover:text-teal-600 cursor-pointer">QA Jargons</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 pt-8 text-center">
+            <p className="text-gray-600 text-sm">© 2025 QA Unplugged Haven. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
