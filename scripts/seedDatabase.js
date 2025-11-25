@@ -19,14 +19,10 @@ const seedData = async () => {
   try {
     await connectDB();
 
-    await User.deleteMany({});
-    await Question.deleteMany({});
-    await Achievement.deleteMany({});
-    await Progress.deleteMany({});
-
-    console.log('🗑️  Cleared existing data');
-
-    const admin = await User.create({
+    // Check if admin already exists
+    let admin = await User.findOne({ email: process.env.ADMIN_EMAIL });
+    if (!admin) {
+      admin = await User.create({
       username: 'admin',
       email: process.env.ADMIN_EMAIL,
       password: process.env.ADMIN_PASSWORD,
@@ -36,25 +32,44 @@ const seedData = async () => {
         lastName: 'User',
         preferredLanguage: 'en'
       }
-    });
+      });
+      console.log('✅ Created admin user');
+    } else {
+      console.log('ℹ️  Admin user already exists');
+    }
 
-    const testUser = await User.create({
-      username: 'testuser',
-      email: 'test@example.com',
-      password: 'Test123!',
-      role: 'user',
-      profile: {
-        firstName: 'Test',
-        lastName: 'User',
-        country: 'USA',
-        preferredLanguage: 'en'
-      }
-    });
+    // Check if test user already exists
+    let testUser = await User.findOne({ email: 'test@example.com' });
+    if (!testUser) {
+      testUser = await User.create({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'Test123!',
+        role: 'user',
+        profile: {
+          firstName: 'Test',
+          lastName: 'User',
+          country: 'USA',
+          preferredLanguage: 'en'
+        }
+      });
+      console.log('✅ Created test user');
+    } else {
+      console.log('ℹ️  Test user already exists');
+    }
 
-    await Progress.create({ user: admin._id });
-    await Progress.create({ user: testUser._id });
+    // Create progress records if they don't exist
+    const adminProgress = await Progress.findOne({ user: admin._id });
+    if (!adminProgress) {
+      await Progress.create({ user: admin._id });
+      console.log('✅ Created admin progress');
+    }
 
-    console.log('✅ Created users');
+    const testUserProgress = await Progress.findOne({ user: testUser._id });
+    if (!testUserProgress) {
+      await Progress.create({ user: testUser._id });
+      console.log('✅ Created test user progress');
+    }
 
     const sampleQuestions = [
       // Fundamentals of Testing
@@ -349,9 +364,16 @@ const seedData = async () => {
       }
     }
 
+    // Only insert questions that don't already exist (check by questionText)
     const allQuestions = [...sampleQuestions, ...beginnerQuestions];
-    await Question.insertMany(allQuestions);
-    console.log(`✅ Created ${allQuestions.length} questions (including ${beginnerQuestions.length} beginner questions)`);
+    const existingQuestionsCount = await Question.countDocuments();
+    
+    if (existingQuestionsCount === 0) {
+      await Question.insertMany(allQuestions);
+      console.log(`✅ Created ${allQuestions.length} questions (including ${beginnerQuestions.length} beginner questions)`);
+    } else {
+      console.log(`ℹ️  Questions already exist (${existingQuestionsCount} questions found). Skipping question creation.`);
+    }
 
     const achievements = [
       {
@@ -392,8 +414,15 @@ const seedData = async () => {
       }
     ];
 
-    await Achievement.insertMany(achievements);
-    console.log('✅ Created achievements');
+    // Only insert achievements if they don't exist
+    const existingAchievementsCount = await Achievement.countDocuments();
+    
+    if (existingAchievementsCount === 0) {
+      await Achievement.insertMany(achievements);
+      console.log('✅ Created achievements');
+    } else {
+      console.log(`ℹ️  Achievements already exist (${existingAchievementsCount} achievements found). Skipping achievement creation.`);
+    }
 
     console.log('\n🎉 Database seeded successfully!');
     console.log('\n📝 Login credentials:');
