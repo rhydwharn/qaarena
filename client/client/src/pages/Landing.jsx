@@ -35,7 +35,7 @@ export default function Landing() {
       title: 'Download QA Materials',
       description: 'Access comprehensive study materials, guides, and resources for your QA journey.',
       color: 'bg-teal-500',
-      link: '/materials'
+      link: '#'
     },
     {
       icon: <Bug className="h-8 w-8" />,
@@ -49,21 +49,21 @@ export default function Landing() {
       title: 'QA Live Quizzes',
       description: 'Join live quiz sessions and compete with other QA professionals in real-time.',
       color: 'bg-green-500',
-      link: '/register'
+      link: '/questions'
     },
     {
       icon: <MessageSquare className="h-8 w-8" />,
       title: 'Interview Questions',
       description: 'Prepare for your next QA interview with our curated collection of questions and answers.',
       color: 'bg-purple-500',
-      link: '/interviews'
+      link: '#'
     },
     {
       icon: <BookMarked className="h-8 w-8" />,
       title: 'QA Jargons & Meanings',
       description: 'Master QA terminology with our comprehensive glossary of testing jargons and definitions.',
       color: 'bg-yellow-500',
-      link: '/jargons'
+      link: '#'
     },
     {
       icon: <Calendar className="h-8 w-8" />,
@@ -125,19 +125,21 @@ export default function Landing() {
             {/* Features Grid - 2 per row */}
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">What We Offer</h2>
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 {features.map((feature, idx) => (
-                  <Card key={idx} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="h-12 w-12 bg-teal-100 rounded-lg flex items-center justify-center text-teal-600 mb-3">
-                        {feature.icon}
-                      </div>
-                      <CardTitle className="text-base">{feature.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600">{feature.description}</p>
-                    </CardContent>
-                  </Card>
+                  <Link key={idx} to={feature.link} className="block">
+                    <Card className="hover:shadow-lg transition-all hover:scale-105 cursor-pointer h-full">
+                      <CardHeader>
+                        <div className="h-12 w-12 bg-teal-100 rounded-lg flex items-center justify-center text-teal-600 mb-3">
+                          {feature.icon}
+                        </div>
+                        <CardTitle className="text-base">{feature.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-600">{feature.description}</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             </div>

@@ -13,6 +13,8 @@ import Progress from './pages/Progress';
 import Leaderboard from './pages/Leaderboard';
 import Achievements from './pages/Achievements';
 import Events from './pages/Events';
+import BugHunting from './pages/BugHunting';
+import BugScenario from './pages/BugScenario';
 
 // Lazy load Admin page
 const Admin = lazy(() => import('./pages/Admin'));
@@ -41,6 +43,14 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/events" element={<Events />} />
+          
+          {/* Public Bug Hunting Routes with Navbar */}
+          <Route element={<Layout />}>
+            <Route path="/bug-hunting" element={<BugHunting />} />
+            <Route path="/bug-hunting/scenario/:scenarioId" element={<BugScenario />} />
+          </Route>
+          
+          {/* Protected Routes */}
           <Route
             element={
               <ProtectedRoute>
