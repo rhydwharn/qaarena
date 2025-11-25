@@ -81,10 +81,10 @@ export default function Login() {
               Sign up
             </Link>
           </div>
-          <div className="mt-4 p-3 bg-muted rounded-md text-xs text-center">
+          {/* <div className="mt-4 p-3 bg-muted rounded-md text-xs text-center">
             <p className="font-medium mb-1">Demo Credentials:</p>
             <p>User: test@example.com / Test123!</p>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>
