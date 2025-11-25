@@ -80,8 +80,8 @@ export default function Landing() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/web_logo.png" alt="QA UNPLUGGED HAVEN" className="h-10 w-10 object-contain rounded-lg" />
-            <span className="text-xl font-bold text-gray-900">QA UNPLUGGED HAVEN</span>
+            <img src="/web_logo.png" alt="QA ARENA" className="h-10 w-10 object-contain rounded-lg" />
+            <span className="text-xl font-bold text-gray-900">QA ARENA</span>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/events">
@@ -151,7 +151,7 @@ export default function Landing() {
               <Card className="shadow-lg">
                 <CardHeader className="text-center">
                   <div className="mx-auto mb-4">
-                    <img src="/web_logo.png" alt="QA UNPLUGGED HAVEN" className="h-16 w-16 object-contain rounded-xl" />
+                    <img src="/web_logo.png" alt="QA ARENA" className="h-16 w-16 object-contain rounded-xl" />
                   </div>
                   <CardTitle className="text-xl">Start Your QA Journey</CardTitle>
                   <p className="text-sm text-gray-600 mt-2">Login to access 500+ questions</p>
@@ -233,8 +233,8 @@ export default function Landing() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-3">
-                <img src="/web_logo.png" alt="QA UNPLUGGED HAVEN" className="h-8 w-8 object-contain rounded-lg" />
-                <span className="text-lg font-bold text-gray-900">QA UNPLUGGED HAVEN</span>
+                <img src="/web_logo.png" alt="QA ARENA" className="h-8 w-8 object-contain rounded-lg" />
+                <span className="text-lg font-bold text-gray-900">QA ARENA</span>
               </div>
               <p className="text-gray-600 text-sm max-w-sm">Empowering QA professionals worldwide with quality learning resources.</p>
             </div>
@@ -256,7 +256,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="border-t border-gray-200 pt-8 text-center">
-            <p className="text-gray-600 text-sm">© 2025 QA Unplugged Haven. All rights reserved.</p>
+            <p className="text-gray-600 text-sm">© 2025 QA ARENA. All rights reserved.</p>
           </div>
         </div>
       </footer>

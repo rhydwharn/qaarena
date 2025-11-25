@@ -26,7 +26,7 @@ export default function Navbar() {
           <div className="flex items-center gap-6">
             <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 font-bold text-lg sm:text-xl">
               <img src="/web_logo.png" alt="App logo" className="h-6 w-6 object-contain" />
-              <span className="truncate">QA UNPLUGGED HAVEN</span>
+              <span className="truncate">QA ARENA</span>
             </Link>
             {user && (
               <div className="hidden md:flex items-center gap-4">
