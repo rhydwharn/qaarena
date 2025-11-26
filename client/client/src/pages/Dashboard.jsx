@@ -192,42 +192,44 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <select
-                  id="category"
-                  className="mt-1 w-full border rounded-md h-10 px-3"
-                  value={category}
-                  onChange={(e) => { setCategory(e.target.value); setAllQuestions(false); }}
-                >
-                  <option value="" disabled>Select a category</option>
-                  <option value="fundamentals">Fundamentals of Testing</option>
-                  <option value="testing-throughout-sdlc">Testing Throughout the SDLC</option>
-                  <option value="static-testing">Static Testing</option>
-                  <option value="test-techniques">Test Design Techniques</option>
-                  <option value="test-management">Test Management</option>
-                  <option value="tool-support">Tool Support for Testing</option>
-                  <option value="agile-testing">Agile Testing</option>
-                  <option value="test-automation">Test Automation</option>
-                </select>
-                {maxAvailable !== null && (
-                  <p className="text-xs text-muted-foreground mt-1">Max available: {maxAvailable}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="num">Number of questions</Label>
-                <Input
-                  id="num"
-                  type="number"
-                  min={1}
-                  max={Math.max(1, maxAvailable || 1)}
-                  value={numQuestions}
-                  onChange={(e) => setNumQuestions(Number(e.target.value))}
-                  disabled={allQuestions}
-                />
-                {maxAvailable !== null && (
-                  <p className="text-xs text-muted-foreground mt-1">You can pick up to {maxAvailable} in this category</p>
-                )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <select
+                    id="category"
+                    className="mt-1 w-full border rounded-md h-10 px-3"
+                    value={category}
+                    onChange={(e) => { setCategory(e.target.value); setAllQuestions(false); }}
+                  >
+                    <option value="" disabled>Select a category</option>
+                    <option value="fundamentals">Fundamentals of Testing</option>
+                    <option value="testing-throughout-sdlc">Testing Throughout the SDLC</option>
+                    <option value="static-testing">Static Testing</option>
+                    <option value="test-techniques">Test Design Techniques</option>
+                    <option value="test-management">Test Management</option>
+                    <option value="tool-support">Tool Support for Testing</option>
+                    <option value="agile-testing">Agile Testing</option>
+                    <option value="test-automation">Test Automation</option>
+                  </select>
+                  {maxAvailable !== null && (
+                    <p className="text-xs text-muted-foreground mt-1">Max available: {maxAvailable}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="num">Number of questions</Label>
+                  <Input
+                    id="num"
+                    type="number"
+                    min={1}
+                    max={Math.max(1, maxAvailable || 1)}
+                    value={numQuestions}
+                    onChange={(e) => setNumQuestions(Number(e.target.value))}
+                    disabled={allQuestions}
+                  />
+                  {maxAvailable !== null && (
+                    <p className="text-xs text-muted-foreground mt-1">You can pick up to {maxAvailable} in this category</p>
+                  )}
+                </div>
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input

@@ -60,7 +60,7 @@ export default function Navbar() {
                     Achievements
                   </Button>
                 </Link>
-                <Link to="/bug-hunting">
+                <Link to="/bug-hunting-hub">
                   <Button variant="ghost" size="sm">
                     <Bug className="h-4 w-4 mr-2" />
                     Bug Hunting
@@ -146,7 +146,7 @@ export default function Navbar() {
                 Achievements
               </Button>
             </Link>
-            <Link to="/bug-hunting" onClick={closeMobileMenu}>
+            <Link to="/bug-hunting-hub" onClick={closeMobileMenu}>
               <Button variant="ghost" size="sm" className="w-full justify-start">
                 <Bug className="h-4 w-4 mr-2" />
                 Bug Hunting

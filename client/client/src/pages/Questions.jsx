@@ -189,9 +189,8 @@ export default function Questions() {
       {/* Start Quiz Section */}
       <Card className="mb-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
         <CardContent className="pt-6">
-          <div className="grid md:grid-cols-3 gap-4 items-end">
-            <div className="md:col-span-1">
-              <Label htmlFor="scope" className="mb-1 block">Scope</Label>
+          <div className="space-y-4">
+            <div>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   id="scope"
@@ -202,44 +201,47 @@ export default function Questions() {
                 All categories
               </label>
             </div>
-            <div className="md:col-span-1">
-              <Label htmlFor="catselect" className="mb-1 block">Category</Label>
-              <select
-                id="catselect"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={filters.category}
-                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                disabled={allCategories}
-              >
-                <option value="" disabled>Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
-              {maxAvailable !== null && (
-                <p className="text-xs text-muted-foreground mt-1">Max available: {maxAvailable}</p>
-              )}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="catselect">Category</Label>
+                <select
+                  id="catselect"
+                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={filters.category}
+                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                  disabled={allCategories}
+                >
+                  <option value="" disabled>Select a category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  ))}
+                </select>
+                {maxAvailable !== null && (
+                  <p className="text-xs text-muted-foreground mt-1">Max available: {maxAvailable}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="qcount">Number of questions</Label>
+                <Input
+                  id="qcount"
+                  type="number"
+                  min={1}
+                  max={Math.max(1, maxAvailable || 1)}
+                  value={numQuestions}
+                  onChange={(e) => setNumQuestions(Number(e.target.value))}
+                  className="mt-1"
+                />
+              </div>
             </div>
-            <div className="md:col-span-1">
-              <Label htmlFor="qcount" className="mb-1 block">Number of questions</Label>
-              <Input
-                id="qcount"
-                type="number"
-                min={1}
-                max={Math.max(1, maxAvailable || 1)}
-                value={numQuestions}
-                onChange={(e) => setNumQuestions(Number(e.target.value))}
-              />
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Start a quiz with {allCategories || !filters.category ? 'mixed questions' : 'selected category'}
+              </p>
+              <Button onClick={startQuiz} size="lg" disabled={startingQuiz || (maxAvailable === 0)}>
+                <PlayCircle className="mr-2 h-5 w-5" />
+                {startingQuiz ? 'Starting...' : 'Start Quiz'}
+              </Button>
             </div>
-          </div>
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Start a quiz with {allCategories || !filters.category ? 'mixed questions' : 'selected category'}
-            </p>
-            <Button onClick={startQuiz} size="lg" disabled={startingQuiz || (maxAvailable === 0)}>
-              <PlayCircle className="mr-2 h-5 w-5" />
-              {startingQuiz ? 'Starting...' : 'Start Quiz'}
-            </Button>
           </div>
         </CardContent>
       </Card>
