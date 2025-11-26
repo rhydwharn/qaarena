@@ -13,7 +13,7 @@ exports.getGlobalLeaderboard = async (req, res, next) => {
 
     const users = await User.find({ isActive: true })
       .select('username role profile.country stats')
-      .sort({ 'stats.totalScore': -1, 'stats.averageScore': -1 })
+      .sort({ 'stats.averageScore': -1, 'stats.totalQuizzes': -1 })
       .limit(parsedLimit);
 
     if (users.length === 0) {
@@ -64,7 +64,7 @@ exports.getCategoryLeaderboard = async (req, res, next) => {
 
     const users = await User.find({ isActive: true })
       .select('username role profile.country stats')
-      .sort({ 'stats.totalScore': -1 })
+      .sort({ 'stats.averageScore': -1, 'stats.totalQuizzes': -1 })
       .limit(parsedLimit);
 
     if (users.length === 0) {
@@ -107,7 +107,13 @@ exports.getUserRank = async (req, res, next) => {
     // Exclude admins from ranking if user is not an admin
     const rankQuery = {
       isActive: true,
-      'stats.totalScore': { $gt: user.stats.totalScore }
+      $or: [
+        { 'stats.averageScore': { $gt: user.stats.averageScore } },
+        { 
+          'stats.averageScore': user.stats.averageScore,
+          'stats.totalQuizzes': { $gt: user.stats.totalQuizzes }
+        }
+      ]
     };
     
     const totalUsersQuery = { isActive: true };
