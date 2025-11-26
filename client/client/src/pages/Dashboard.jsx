@@ -7,6 +7,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { progressAPI, quizAPI, questionsAPI } from '../services/api';
 import { BookOpen, Trophy, Target, Flame, PlayCircle } from 'lucide-react';
+import { getCategories, formatCategoriesForSelect } from '../services/categoryService';
 
 export default function Dashboard() {
   const [progress, setProgress] = useState(null);
@@ -18,10 +19,17 @@ export default function Dashboard() {
   const [maxAvailable, setMaxAvailable] = useState(null);
   const [numQuestions, setNumQuestions] = useState(10);
   const [allQuestions, setAllQuestions] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
+    loadCategories();
     loadDashboardData();
   }, []);
+
+  const loadCategories = async () => {
+    const cats = await getCategories();
+    setCategories(formatCategoriesForSelect(cats));
+  };
 
   const normalizePercent = (value) => {
     if (typeof value === 'number' && !isNaN(value)) {
@@ -202,14 +210,9 @@ export default function Dashboard() {
                     onChange={(e) => { setCategory(e.target.value); setAllQuestions(false); }}
                   >
                     <option value="" disabled>Select a category</option>
-                    <option value="fundamentals">Fundamentals of Testing</option>
-                    <option value="testing-throughout-sdlc">Testing Throughout the SDLC</option>
-                    <option value="static-testing">Static Testing</option>
-                    <option value="test-techniques">Test Design Techniques</option>
-                    <option value="test-management">Test Management</option>
-                    <option value="tool-support">Tool Support for Testing</option>
-                    <option value="agile-testing">Agile Testing</option>
-                    <option value="test-automation">Test Automation</option>
+                    {categories.map((cat) => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
                   </select>
                   {maxAvailable !== null && (
                     <p className="text-xs text-muted-foreground mt-1">Max available: {maxAvailable}</p>

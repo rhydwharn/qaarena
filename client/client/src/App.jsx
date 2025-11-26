@@ -18,6 +18,7 @@ import BugHunting from './pages/BugHunting';
 import BugScenario from './pages/BugScenario';
 import FunctionalBugHunting from './pages/FunctionalBugHunting';
 import FunctionalBugScenario from './pages/FunctionalBugScenario';
+import QuestionUpload from './pages/QuestionUpload';
 
 // Lazy load Admin page
 const Admin = lazy(() => import('./pages/Admin'));
@@ -81,6 +82,14 @@ function App() {
                   }>
                     <Admin />
                   </Suspense>
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/question-upload"
+              element={
+                <AdminRoute>
+                  <QuestionUpload />
                 </AdminRoute>
               }
             />

@@ -15,6 +15,7 @@ const leaderboardRoutes = require('./routes/leaderboard');
 const achievementRoutes = require('./routes/achievements');
 const adminRoutes = require('./routes/admin');
 const functionalBugRoutes = require('./routes/functionalBugs');
+const questionUploadRoutes = require('./routes/questionUpload');
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/functional-bugs', functionalBugRoutes);
+app.use('/api/questions-upload', questionUploadRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

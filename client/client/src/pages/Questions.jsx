@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label';
 import { questionsAPI, quizAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, ThumbsUp, ThumbsDown, Flag, Search, Filter, PlayCircle, Edit } from 'lucide-react';
+import { getCategories, formatCategoriesForSelect } from '../services/categoryService';
 
 export default function Questions() {
   const navigate = useNavigate();
@@ -23,10 +24,17 @@ export default function Questions() {
   const [allCategories, setAllCategories] = useState(true);
   const [numQuestions, setNumQuestions] = useState(10);
   const [maxAvailable, setMaxAvailable] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
+    loadCategories();
     loadQuestions();
   }, []);
+
+  const loadCategories = async () => {
+    const cats = await getCategories();
+    setCategories(formatCategoriesForSelect(cats));
+  };
 
   // compute max available for selected scope
   useEffect(() => {
@@ -132,17 +140,6 @@ export default function Questions() {
       setStartingQuiz(false);
     }
   };
-
-  const categories = [
-    { value: 'fundamentals', label: 'Fundamentals of Testing' },
-    { value: 'testing-throughout-sdlc', label: 'Testing Throughout the SDLC' },
-    { value: 'static-testing', label: 'Static Testing' },
-    { value: 'test-techniques', label: 'Test Design Techniques' },
-    { value: 'test-management', label: 'Test Management' },
-    { value: 'tool-support', label: 'Tool Support for Testing' },
-    { value: 'agile-testing', label: 'Agile Testing' },
-    { value: 'test-automation', label: 'Test Automation' },
-  ];
 
   const difficulties = [
     { value: 'foundation', label: 'Foundation' },
@@ -312,7 +309,7 @@ export default function Questions() {
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-muted-foreground">
-              Showing {questions.length} questions. Go to Admin Dashboard to create/edit questions.
+              Showing {questions.length} questions. Go to Admin Dashboard to manage questions.
             </p>
             <Button onClick={() => navigate('/admin')} variant="outline">
               <Edit className="mr-2 h-4 w-4" />

@@ -4,7 +4,8 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { adminAPI, questionsAPI } from '../services/api';
-import { Users, FileQuestion, Shield, TrendingUp, AlertTriangle, Plus, Edit, Trash2, X } from 'lucide-react';
+import { Users, FileQuestion, Shield, TrendingUp, AlertTriangle, Plus, Edit, Trash2, X, CheckSquare, Square } from 'lucide-react';
+import { getCategories } from '../services/categoryService';
 
 export default function Admin() {
   const [stats, setStats] = useState(null);
@@ -15,20 +16,29 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
+  const [selectedQuestions, setSelectedQuestions] = useState([]);
+  const [deleting, setDeleting] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [questionForm, setQuestionForm] = useState({
     questionText: '',
     type: 'single-choice',
     options: ['', '', '', ''],
     correctAnswers: [],
     explanation: '',
-    category: 'fundamentals',
+    category: '',
     difficulty: 'foundation',
     tags: '',
   });
 
   useEffect(() => {
     loadAdminData();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    const cats = await getCategories();
+    setCategories(cats);
+  };
 
   useEffect(() => {
     if (activeTab === 'manage-questions') {
@@ -203,12 +213,57 @@ export default function Admin() {
       options: ['', '', '', ''],
       correctAnswers: [],
       explanation: '',
-      category: 'fundamentals',
+      category: '',
       difficulty: 'foundation',
       tags: '',
     });
     setEditingQuestion(null);
     setShowQuestionForm(false);
+  };
+
+  const toggleQuestionSelection = (questionId) => {
+    setSelectedQuestions(prev => 
+      prev.includes(questionId)
+        ? prev.filter(id => id !== questionId)
+        : [...prev, questionId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedQuestions.length === allQuestions.length) {
+      setSelectedQuestions([]);
+    } else {
+      setSelectedQuestions(allQuestions.map(q => q._id));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedQuestions.length === 0) {
+      alert('Please select questions to delete');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${selectedQuestions.length} question(s)? This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleting(true);
+      const deletePromises = selectedQuestions.map(id => questionsAPI.delete(id));
+      await Promise.all(deletePromises);
+      
+      alert(`Successfully deleted ${selectedQuestions.length} question(s)`);
+      setSelectedQuestions([]);
+      loadAllQuestions();
+      loadAdminData();
+    } catch (error) {
+      console.error('Failed to delete questions:', error);
+      alert(error.response?.data?.message || 'Failed to delete some questions');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -344,15 +399,56 @@ export default function Admin() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold">Manage Questions</h2>
-              <p className="text-muted-foreground">Create, edit, and delete questions</p>
+              <p className="text-muted-foreground">
+                Create, edit, and delete questions
+                {selectedQuestions.length > 0 && (
+                  <span className="ml-2 font-medium text-primary">
+                    ({selectedQuestions.length} selected)
+                  </span>
+                )}
+              </p>
             </div>
-            <Button onClick={() => setShowQuestionForm(!showQuestionForm)}>
-              {showQuestionForm ? (
-                <><X className="mr-2 h-4 w-4" /> Cancel</>
-              ) : (
-                <><Plus className="mr-2 h-4 w-4" /> Add Question</>
+            <div className="flex items-center gap-2">
+              {allQuestions.length > 0 && !showQuestionForm && (
+                <>
+                  <Button
+                    onClick={toggleSelectAll}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {selectedQuestions.length === allQuestions.length ? (
+                      <>
+                        <CheckSquare className="mr-2 h-4 w-4" />
+                        Deselect All
+                      </>
+                    ) : (
+                      <>
+                        <Square className="mr-2 h-4 w-4" />
+                        Select All
+                      </>
+                    )}
+                  </Button>
+                  {selectedQuestions.length > 0 && (
+                    <Button
+                      onClick={handleDeleteSelected}
+                      variant="destructive"
+                      size="sm"
+                      disabled={deleting}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {deleting ? 'Deleting...' : `Delete ${selectedQuestions.length}`}
+                    </Button>
+                  )}
+                </>
               )}
-            </Button>
+              <Button onClick={() => setShowQuestionForm(!showQuestionForm)}>
+                {showQuestionForm ? (
+                  <><X className="mr-2 h-4 w-4" /> Cancel</>
+                ) : (
+                  <><Plus className="mr-2 h-4 w-4" /> Add Question</>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Question Form */}
@@ -392,19 +488,20 @@ export default function Admin() {
 
                     <div className="space-y-2">
                       <Label htmlFor="category">Category *</Label>
-                      <select
+                      <Input
                         id="category"
-                        className="w-full h-10 px-3 border rounded-md"
                         value={questionForm.category}
                         onChange={(e) => setQuestionForm({ ...questionForm, category: e.target.value })}
-                      >
-                        <option value="fundamentals">Fundamentals</option>
-                        <option value="testing-throughout-sdlc">Testing Throughout SDLC</option>
-                        <option value="static-testing">Static Testing</option>
-                        <option value="test-techniques">Test Techniques</option>
-                        <option value="test-management">Test Management</option>
-                        <option value="tool-support">Tool Support</option>
-                      </select>
+                        placeholder="Enter category (e.g., fundamentals, javascript, security)"
+                        list="category-suggestions"
+                        required
+                      />
+                      <datalist id="category-suggestions">
+                        {categories.map((cat) => (
+                          <option key={cat} value={cat} />
+                        ))}
+                      </datalist>
+                      <p className="text-xs text-muted-foreground">Type any category or select from existing ones</p>
                     </div>
 
                     <div className="space-y-2">
@@ -487,9 +584,22 @@ export default function Admin() {
               </Card>
             ) : (
               allQuestions.map((question) => (
-                <Card key={question._id}>
+                <Card 
+                  key={question._id}
+                  className={`${
+                    selectedQuestions.includes(question._id) ? 'ring-2 ring-primary' : ''
+                  }`}
+                >
                   <CardHeader>
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="pt-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedQuestions.includes(question._id)}
+                          onChange={() => toggleQuestionSelection(question._id)}
+                          className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                        />
+                      </div>
                       <div className="flex-1">
                         <CardTitle className="text-base">
                           {question.questionText?.en || question.questionText}

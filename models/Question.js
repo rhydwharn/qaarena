@@ -19,7 +19,8 @@ const questionSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'Category is required'],
-    enum: ['fundamentals', 'testing-throughout-sdlc', 'static-testing', 'test-techniques', 'test-management', 'tool-support', 'agile-testing', 'test-automation']
+    lowercase: true,
+    trim: true
   },
   difficulty: {
     type: String,

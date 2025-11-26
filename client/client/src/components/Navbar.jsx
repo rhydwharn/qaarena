@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
-import { BookOpen, LogOut, User, LayoutDashboard, Trophy, BarChart3, Award, Menu, X, Bug } from 'lucide-react';
+import { BookOpen, LogOut, User, LayoutDashboard, Trophy, BarChart3, Award, Menu, X, Bug, Upload } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -66,6 +66,14 @@ export default function Navbar() {
                     Bug Hunting
                   </Button>
                 </Link>
+                {user?.role === 'admin' && (
+                  <Link to="/question-upload">
+                    <Button variant="ghost" size="sm">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload
+                    </Button>
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -152,6 +160,14 @@ export default function Navbar() {
                 Bug Hunting
               </Button>
             </Link>
+            {user?.role === 'admin' && (
+              <Link to="/question-upload" onClick={closeMobileMenu}>
+                <Button variant="ghost" size="sm" className="w-full justify-start">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Questions
+                </Button>
+              </Link>
+            )}
             <div className="border-t pt-2 mt-2">
               <div className="flex items-center gap-2 px-3 py-2 text-sm">
                 <User className="h-4 w-4" />

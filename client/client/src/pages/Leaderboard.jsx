@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { leaderboardAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Trophy, Medal, Award, Crown, TrendingUp, Shield } from 'lucide-react';
+import { getCategories, formatCategoriesForSelect } from '../services/categoryService';
 
 export default function Leaderboard() {
   const { user } = useAuth();
@@ -12,10 +13,20 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('global');
   const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     loadLeaderboard();
   }, [view, category]);
+
+  const loadCategories = async () => {
+    const cats = await getCategories();
+    setCategories(formatCategoriesForSelect(cats));
+  };
 
   const loadLeaderboard = async () => {
     try {
@@ -50,15 +61,6 @@ export default function Leaderboard() {
     if (rank === 3) return <Medal className="h-5 w-5 text-amber-600" />;
     return null;
   };
-
-  const categories = [
-    { value: 'fundamentals', label: 'Fundamentals' },
-    { value: 'testing-throughout-sdlc', label: 'Testing Throughout SDLC' },
-    { value: 'static-testing', label: 'Static Testing' },
-    { value: 'test-techniques', label: 'Test Techniques' },
-    { value: 'test-management', label: 'Test Management' },
-    { value: 'tool-support', label: 'Tool Support' },
-  ];
 
   if (loading) {
     return (
