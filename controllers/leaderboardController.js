@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Progress = require('../models/Progress');
 const ErrorResponse = require('../utils/errorResponse');
 
 exports.getGlobalLeaderboard = async (req, res, next) => {
@@ -11,7 +12,7 @@ exports.getGlobalLeaderboard = async (req, res, next) => {
       return next(new ErrorResponse('Limit must be a number between 1 and 100', 400));
     }
 
-    const users = await User.find({ isActive: true })
+    const users = await User.find({ isActive: true, role: { $ne: 'admin' } })
       .select('username role profile.country stats')
       .sort({ 'stats.averageScore': -1, 'stats.totalQuizzes': -1 })
       .limit(parsedLimit);
@@ -62,12 +63,17 @@ exports.getCategoryLeaderboard = async (req, res, next) => {
       return next(new ErrorResponse('Limit must be a number between 1 and 100', 400));
     }
 
-    const users = await User.find({ isActive: true })
-      .select('username role profile.country stats')
-      .sort({ 'stats.averageScore': -1, 'stats.totalQuizzes': -1 })
-      .limit(parsedLimit);
+    // Get all progress records that have activity in this category
+    const progressRecords = await Progress.find({
+      'categoryProgress': {
+        $elemMatch: {
+          category: category,
+          questionsAttempted: { $gt: 0 }
+        }
+      }
+    }).select('user categoryProgress');
 
-    if (users.length === 0) {
+    if (progressRecords.length === 0) {
       return res.status(200).json({
         success: true,
         message: `No users on the ${category} leaderboard yet. Be the first!`,
@@ -75,15 +81,49 @@ exports.getCategoryLeaderboard = async (req, res, next) => {
       });
     }
 
-    const leaderboard = users.map((user, index) => ({
+    // Get user IDs who have taken quizzes in this category
+    const userIds = progressRecords.map(p => p.user);
+
+    // Get users and populate with their category-specific stats
+    const users = await User.find({ 
+      _id: { $in: userIds },
+      isActive: true, 
+      role: { $ne: 'admin' } 
+    }).select('username role profile.country stats');
+
+    // Enrich users with category-specific data and sort
+    const enrichedUsers = users.map(user => {
+      const userProgress = progressRecords.find(p => p.user.toString() === user._id.toString());
+      const categoryData = userProgress?.categoryProgress.find(cp => cp.category === category);
+      
+      return {
+        user,
+        categoryScore: categoryData?.averageScore || 0,
+        categoryQuestions: categoryData?.questionsAttempted || 0,
+        categoryCorrect: categoryData?.questionsCorrect || 0
+      };
+    })
+    .sort((a, b) => {
+      // Sort by category average score first, then by questions attempted
+      if (b.categoryScore !== a.categoryScore) {
+        return b.categoryScore - a.categoryScore;
+      }
+      return b.categoryQuestions - a.categoryQuestions;
+    })
+    .slice(0, parsedLimit);
+
+    const leaderboard = enrichedUsers.map((item, index) => ({
       rank: index + 1,
-      username: user.username,
-      role: user.role,
-      country: user.profile.country,
-      totalScore: user.stats.totalScore,
-      averageScore: user.stats.averageScore,
-      totalQuizzes: user.stats.totalQuizzes,
-      correctAnswers: user.stats.correctAnswers
+      username: item.user.username,
+      role: item.user.role,
+      country: item.user.profile.country,
+      categoryScore: item.categoryScore,
+      categoryQuestions: item.categoryQuestions,
+      categoryCorrect: item.categoryCorrect,
+      totalScore: item.user.stats.totalScore,
+      averageScore: item.user.stats.averageScore,
+      totalQuizzes: item.user.stats.totalQuizzes,
+      correctAnswers: item.user.stats.correctAnswers
     }));
 
     res.status(200).json({
@@ -104,9 +144,23 @@ exports.getUserRank = async (req, res, next) => {
       return next(new ErrorResponse('User not found', 404));
     }
 
-    // Exclude admins from ranking if user is not an admin
+    // Admin users don't have a rank
+    if (user.role === 'admin') {
+      return res.status(200).json({
+        success: true,
+        message: 'Admin accounts are not ranked on the leaderboard',
+        data: {
+          totalScore: user.stats.totalScore,
+          averageScore: user.stats.averageScore,
+          isAdmin: true
+        }
+      });
+    }
+
+    // Always exclude admins from ranking
     const rankQuery = {
       isActive: true,
+      role: { $ne: 'admin' },
       $or: [
         { 'stats.averageScore': { $gt: user.stats.averageScore } },
         { 
@@ -116,13 +170,7 @@ exports.getUserRank = async (req, res, next) => {
       ]
     };
     
-    const totalUsersQuery = { isActive: true };
-    
-    // If user is not admin, exclude admins from ranking
-    if (user.role !== 'admin') {
-      rankQuery.role = { $ne: 'admin' };
-      totalUsersQuery.role = { $ne: 'admin' };
-    }
+    const totalUsersQuery = { isActive: true, role: { $ne: 'admin' } };
     
     const rank = await User.countDocuments(rankQuery) + 1;
     const totalUsers = await User.countDocuments(totalUsersQuery);

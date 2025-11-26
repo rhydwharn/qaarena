@@ -78,8 +78,8 @@ export default function Leaderboard() {
         <p className="text-muted-foreground">See how you rank against other learners</p>
       </div>
 
-      {/* Your Rank Card */}
-      {userRank && (
+      {/* Your Rank Card - Only show for non-admin users */}
+      {userRank && !userRank.isAdmin && (
         <Card className="mb-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
