@@ -77,3 +77,12 @@ uploads/*
 !uploads/.gitkeep
 tmp/
 temp/
+
+# Word temporary files
+~$*
+
+# Archived documentation (consolidated into main docs)
+docs/archive/
+
+# Old test files
+QA_Unplugged_Haven_Test_Cases.xlsx

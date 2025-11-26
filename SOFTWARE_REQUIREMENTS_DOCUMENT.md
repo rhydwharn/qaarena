@@ -1,13 +1,22 @@
 # Software Requirements Document (SRD)
-## ISTQB Practice Q&A Platform
 
-**Version:** 1.0  
-**Date:** November 2024  
-**Project:** ISTQB Certification Practice Platform - Backend API
+## QA Arena - ISTQB Certification Practice Platform
+
+---
+
+**Document Version:** 2.0  
+**Date:** November 26, 2024  
+**Project Name:** QA Arena  
+**Project Type:** Full-Stack Web Application  
+**Status:** Production Ready  
+
+**Prepared By:** Development Team  
+**Organization:** QA Arena  
 
 ---
 
 ## Table of Contents
+
 1. [Introduction](#1-introduction)
 2. [System Overview](#2-system-overview)
 3. [Functional Requirements](#3-functional-requirements)
@@ -15,301 +24,420 @@
 5. [System Architecture](#5-system-architecture)
 6. [Data Models](#6-data-models)
 7. [API Specifications](#7-api-specifications)
-8. [Security Requirements](#8-security-requirements)
-9. [Performance Requirements](#9-performance-requirements)
-10. [Deployment Requirements](#10-deployment-requirements)
+8. [Security & Performance](#8-security--performance)
 
 ---
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This document specifies the software requirements for the ISTQB Practice Q&A Platform backend system. The platform provides a comprehensive learning environment for ISTQB certification preparation with features including quiz management, progress tracking, gamification, and administrative controls.
+
+This Software Requirements Document specifies the complete functional and non-functional requirements for QA Arena - a comprehensive web-based platform for ISTQB certification exam preparation.
 
 ### 1.2 Scope
-The system is a Node.js/Express.js RESTful API backend that serves a React-based frontend application. It manages user authentication, question banks, quiz sessions, progress analytics, achievements, and administrative functions.
 
-### 1.3 Definitions and Acronyms
+**System Name:** QA Arena - ISTQB Certification Practice Platform
+
+**Primary Functions:**
+- Interactive quiz-based learning system (1000+ questions)
+- Bug hunting simulation environment (20+ scenarios)
+- Progress tracking and analytics
+- Gamification with achievements and leaderboards
+- Administrative content management
+- Bulk question upload via Excel
+
+**Target Users:**
+- ISTQB certification candidates
+- Software testing professionals
+- QA engineers
+- Platform administrators
+
+### 1.3 Definitions
+
 - **ISTQB**: International Software Testing Qualifications Board
-- **CTFL**: Certified Tester Foundation Level
-- **JWT**: JSON Web Token
+- **JWT**: JSON Web Token for authentication
 - **API**: Application Programming Interface
-- **REST**: Representational State Transfer
-- **CRUD**: Create, Read, Update, Delete
-
-### 1.4 References
-- ISTQB CTFL Syllabus 2018
-- Express.js Documentation
-- MongoDB Documentation
-- JWT RFC 7519
+- **Quiz Resume**: Ability to continue incomplete quizzes
+- **Study Streak**: Consecutive days of platform usage
+- **Bug Hunting**: Interactive scenarios for finding software defects
 
 ---
 
 ## 2. System Overview
 
 ### 2.1 System Description
-The ISTQB Practice Q&A Platform is a web-based learning management system designed to help users prepare for ISTQB certification examinations through interactive quizzes, progress tracking, and gamification elements.
 
-### 2.2 System Context
-- **Frontend**: React SPA (Single Page Application)
-- **Backend**: Node.js with Express.js framework
-- **Database**: MongoDB (NoSQL)
-- **Authentication**: JWT-based token authentication
-- **Deployment**: Cloud-based (configurable)
+QA Arena is a full-stack web application combining traditional quiz-based learning with innovative bug hunting simulations for ISTQB exam preparation.
 
-### 2.3 User Roles
-1. **User**: Standard platform user who can take quizzes and track progress
-2. **Moderator**: Can manage questions and review flagged content
-3. **Admin**: Full system access including user management and platform statistics
+**Core Capabilities:**
+
+1. **Quiz Management System**
+   - Customized quizzes from 1000+ questions
+   - Multiple modes (practice, exam, timed)
+   - Resume incomplete quizzes
+   - Instant feedback with explanations
+
+2. **Bug Hunting Hub**
+   - 20+ interactive bug scenarios
+   - Real-world application simulators
+   - Hands-on defect identification
+   - Detailed feedback
+
+3. **Progress Analytics**
+   - Performance tracking
+   - Category-wise breakdown
+   - Weak area identification
+   - Study streak monitoring
+
+4. **Gamification**
+   - Achievement system
+   - Global and category leaderboards
+   - Points and ranking
+
+5. **Administrative Tools**
+   - Question management (CRUD)
+   - Excel bulk upload
+   - User management
+   - Platform analytics
+
+### 2.2 Technology Stack
+
+**Frontend:**
+- React 18+ with Vite
+- React Router v6
+- Axios for API calls
+- Tailwind CSS for styling
+- Lucide React for icons
+
+**Backend:**
+- Node.js 18+
+- Express.js 4+
+- MongoDB 6+ with Mongoose
+- JWT authentication
+- bcryptjs for password hashing
+- xlsx for Excel processing
+
+**Security & Middleware:**
+- helmet (security headers)
+- express-rate-limit (API protection)
+- CORS configuration
+- express-validator (input validation)
+
+### 2.3 System Architecture
+
+```
+┌─────────────────────────────────────────┐
+│     Presentation Layer (React SPA)      │
+│  - User Interface Components            │
+│  - State Management (Hooks)             │
+│  - API Communication                    │
+└──────────────┬──────────────────────────┘
+               │ HTTPS/REST API
+┌──────────────▼──────────────────────────┐
+│   Application Layer (Express.js)        │
+│  - Authentication & Authorization       │
+│  - Business Logic                       │
+│  - Request Routing                      │
+│  - File Processing                      │
+└──────────────┬──────────────────────────┘
+               │
+┌──────────────▼──────────────────────────┐
+│      Data Layer (MongoDB)               │
+│  - User Data                            │
+│  - Question Bank                        │
+│  - Quiz Sessions                        │
+│  - Progress Records                     │
+└─────────────────────────────────────────┘
+```
 
 ---
 
 ## 3. Functional Requirements
 
-### 3.1 User Authentication & Authorization
+### 3.1 User Management
 
-#### FR-1.1: User Registration
-- **Description**: Users must be able to register for a new account
-- **Inputs**: Username, email, password, profile information (firstName, lastName, country, preferredLanguage)
-- **Validation**:
-  - Username: 3-30 characters, unique
-  - Email: Valid format, unique
-  - Password: Minimum 6 characters
-- **Outputs**: JWT token, user profile data
-- **Process**: Hash password with bcrypt, create user record, generate JWT token
+**FR-UM-001: User Registration**
+- Users can create accounts with username, email, password
+- Email must be unique
+- Password requirements: min 6 chars, 1 uppercase, 1 number, 1 special character
+- Password hashed with bcrypt
+- Default role: 'user'
+- JWT token issued upon registration
 
-#### FR-1.2: User Login
-- **Description**: Registered users must be able to authenticate
-- **Inputs**: Email, password
-- **Validation**: Credentials match, account is active
-- **Outputs**: JWT token, user profile data
-- **Process**: Verify credentials, update last login timestamp, generate JWT token
+**FR-UM-002: User Authentication**
+- Login with email and password
+- JWT token generated (30-day expiry)
+- Token-based session management
+- Logout functionality
 
-#### FR-1.3: Token-Based Authentication
-- **Description**: Protect API endpoints with JWT authentication
-- **Requirements**: 
-  - Token expiration configurable
-  - Token refresh capability
-  - Role-based access control (RBAC)
-
-#### FR-1.4: User Profile Management
-- **Description**: Users can view and update their profile information
-- **Capabilities**:
-  - Update profile details (name, country, language, avatar)
-  - View account statistics
-  - View achievement history
+**FR-UM-003: Role-Based Access**
+- Two roles: 'user' and 'admin'
+- Admin routes protected
+- Role verification on each request
 
 ### 3.2 Question Management
 
-#### FR-2.1: Question Creation (Admin/Moderator)
-- **Description**: Authorized users can create new questions
-- **Required Fields**:
-  - Question text (multi-language support via Map)
-  - Question type (single-choice, multiple-choice, true-false)
-  - Options with correct answer indicators
-  - Category (8 predefined categories)
-  - Difficulty level (foundation, advanced, expert)
-  - Points (1-10)
-  - Syllabus reference
-  - Tags
-  - Explanation (multi-language)
-- **Validation**: At least one correct answer, valid category and difficulty
+**FR-QM-001: Create Question (Admin)**
+- Question text with multi-language support
+- Minimum 2 options, maximum 4
+- Correct answer index (0-3)
+- Category (required)
+- Difficulty: foundation, advanced, expert
+- Type: single-choice, multiple-choice, true-false
+- Explanation text
+- Tags (optional)
+- Status: published, draft, archived, flagged
 
-#### FR-2.2: Question Retrieval
-- **Description**: Retrieve questions with filtering and pagination
-- **Filters**:
-  - Category
-  - Difficulty level
-  - Status (draft, published, archived, flagged)
-  - Tags
-  - Language
-- **Sorting**: By date, difficulty, success rate
-- **Pagination**: Configurable page size
+**FR-QM-002: View Questions**
+- Pagination support
+- Filters: category, difficulty, search text
+- Only published questions shown to users
+- Admins see all statuses
 
-#### FR-2.3: Question Update (Admin/Moderator)
-- **Description**: Modify existing questions
-- **Capabilities**:
-  - Edit all question fields
-  - Change status
-  - Add contributors
-  - Track modification history
+**FR-QM-003: Update Question (Admin)**
+- Edit all question fields
+- Validation applied
+- Version history maintained
 
-#### FR-2.4: Question Deletion (Admin)
-- **Description**: Remove questions from the system
-- **Constraints**: Cannot delete questions used in active quizzes
+**FR-QM-004: Delete Question (Admin)**
+- Single delete
+- Multi-select bulk delete
+- Confirmation required
+- Audit trail logged
 
-#### FR-2.5: Question Flagging
-- **Description**: Users can flag inappropriate or incorrect questions
-- **Inputs**: Question ID, reason
-- **Process**: Add flag to question, notify moderators
-
-#### FR-2.6: Question Voting
-- **Description**: Users can upvote or downvote questions
-- **Tracking**: Upvotes and downvotes count
-- **Purpose**: Quality control and community feedback
+**FR-QM-005: Flag Question (User)**
+- Users can report problematic questions
+- Reason required
+- Status changed to 'flagged'
+- Admin notification
 
 ### 3.3 Quiz System
 
-#### FR-3.1: Quiz Creation
-- **Description**: Users can start new quiz sessions
-- **Quiz Modes**:
-  - **Practice**: Unlimited time, immediate feedback
-  - **Exam**: Timed, no feedback until completion
-  - **Timed**: Time limit per question
-  - **Category**: Focus on specific category
-- **Settings**:
-  - Language preference
-  - Category filter
-  - Difficulty filter
-  - Number of questions
-  - Time limit
-  - Random order option
+**FR-QZ-001: Start Quiz**
+- Select mode: practice, exam, timed
+- Select category (or all categories)
+- Select difficulty
+- Choose number of questions (1-100)
+- **Validation**: Cannot start new quiz if one is in-progress
+- Random question selection
+- No duplicate questions
+- Quiz status: 'in-progress'
 
-#### FR-3.2: Quiz Taking
-- **Description**: Users answer questions in active quiz
-- **Capabilities**:
-  - Submit single or multiple answers
-  - Track time spent per question
-  - Navigate between questions (practice mode)
-  - Save progress automatically
-- **Constraints**:
-  - Cannot change answers after submission (exam mode)
-  - Time limits enforced
+**FR-QZ-002: Answer Question**
+- Submit answer for each question
+- Immediate validation
+- Answer saved to database
+- Time tracking per question
+- Can change answer before completion
 
-#### FR-3.3: Quiz Completion
-- **Description**: Finalize quiz and calculate results
-- **Calculations**:
-  - Correct/incorrect/unanswered counts
-  - Percentage score
-  - Total points earned
-  - Total time spent
-- **Outputs**: Detailed results, correct answers, explanations
+**FR-QZ-003: Complete Quiz**
+- All questions must be answered
+- Calculate final score
+- Calculate percentage
+- Update quiz status to 'completed'
+- Update user progress
+- Award points
+- Check for achievements
 
-#### FR-3.4: Quiz History
-- **Description**: Users can view past quiz attempts
-- **Information Displayed**:
-  - Quiz mode and settings
-  - Score and statistics
-  - Date and duration
-  - Question-by-question breakdown
+**FR-QZ-004: Resume Quiz** ⭐
+- Load in-progress quiz
+- Restore all previous answers
+- Show accurate progress (e.g., "2/5 answered")
+- Jump to first unanswered question
+- Same questions as before (no new random questions)
+- Works after page refresh, timeout, or browser close
 
-### 3.4 Progress Tracking
+**FR-QZ-005: View Quiz History**
+- List all completed quizzes
+- Show score, date, category
+- Pagination support
+- Filter by status, category, date
 
-#### FR-4.1: Overall Progress
-- **Description**: Track user's learning progress across the platform
-- **Metrics**:
-  - Total quizzes taken
-  - Total questions answered
-  - Overall accuracy rate
-  - Average score
-  - Total points earned
-  - Current streak
+**FR-QZ-006: In-Progress Quiz Detection**
+- Dashboard shows "Resume Quiz" banner
+- Display quiz details (category, progress)
+- Prevent starting new quiz
+- Prompt user to resume or complete
 
-#### FR-4.2: Category Progress
-- **Description**: Track performance by question category
-- **Metrics per Category**:
-  - Questions answered
-  - Accuracy rate
-  - Average time per question
-  - Mastery level
+### 3.4 Bug Hunting Hub
 
-#### FR-4.3: Weak Areas Identification
-- **Description**: Identify topics requiring more practice
-- **Criteria**: Categories with <70% accuracy
-- **Recommendations**: Suggested questions for improvement
+**FR-BH-001: View Bug Scenarios**
+- List all available scenarios
+- Filter by category, difficulty
+- Show scenario details
+- Estimated time to complete
 
-#### FR-4.4: Study Streak
-- **Description**: Track consecutive days of platform usage
-- **Rules**:
-  - Increment on daily activity
-  - Reset if no activity for 24+ hours
-  - Display current and longest streak
+**FR-BH-002: Launch Simulator**
+- Interactive bug environment
+- 20+ different simulators:
+  - E-commerce: Shopping cart, checkout, orders
+  - Booking: Hotel, flight, event registration
+  - Utilities: Calculator, forms, search, timer
+  - And more...
 
-#### FR-4.5: Performance Analytics
-- **Description**: Detailed analytics and visualizations
-- **Charts**:
-  - Score trends over time
-  - Category performance radar chart
-  - Time spent per category
-  - Difficulty level distribution
+**FR-BH-003: Submit Bug Report**
+- Bug description (required)
+- Steps to reproduce (required)
+- Expected behavior (required)
+- Actual behavior (required)
+- Severity level
+- Automatic matching with known bugs
+- Score calculation
+- Detailed feedback
 
-### 3.5 Leaderboard System
+**FR-BH-004: Bug Hunting Progress**
+- Track completed scenarios
+- Calculate success rate
+- Time spent per scenario
+- Overall bug hunting statistics
 
-#### FR-5.1: Global Leaderboard
-- **Description**: Rank users by total score
-- **Display**:
-  - Top 100 users
-  - Username, score, quiz count
-  - User's rank highlighted
-- **Refresh**: Real-time or periodic updates
+### 3.5 Progress Tracking
 
-#### FR-5.2: Category Leaderboards
-- **Description**: Separate rankings per category
-- **Filters**: By time period (weekly, monthly, all-time)
+**FR-PT-001: Overall Progress**
+- Total quizzes completed
+- Total questions answered
+- Correct/incorrect answers
+- Average score percentage
+- Total time spent
+- Last activity date
 
-#### FR-5.3: User Rank
-- **Description**: Display user's current global rank
-- **Information**: Rank, percentile, points to next rank
+**FR-PT-002: Category Progress**
+- Questions attempted per category
+- Questions correct per category
+- Average score per category
+- Mastery level (0-100)
+- Last attempted date
 
-### 3.6 Achievement System
+**FR-PT-003: Study Streak**
+- Current streak (consecutive days)
+- Longest streak achieved
+- Last study date
+- Streak status (active/broken)
+- Visual indicators
 
-#### FR-6.1: Achievement Definitions
-- **Types**:
-  - **Milestone**: Complete X quizzes
-  - **Accuracy**: Achieve X% accuracy
-  - **Streak**: Maintain X-day streak
-  - **Category Mastery**: 90%+ in category
-  - **Speed**: Complete quiz in record time
-  - **Participation**: Platform engagement
+**FR-PT-004: Weak Areas**
+- Categories below 60% accuracy
+- Ranked by priority
+- Recommendations
+- Updated after each quiz
 
-#### FR-6.2: Achievement Unlocking
-- **Description**: Automatically award achievements when criteria met
-- **Process**: Check criteria after each quiz completion
-- **Notification**: Alert user of new achievements
+**FR-PT-005: Progress Dashboard**
+- Overall statistics
+- Category breakdown charts
+- Study streak display
+- Weak areas list
+- Recent activity timeline
 
-#### FR-6.3: Achievement Display
-- **Description**: Show earned and available achievements
-- **Information**:
-  - Achievement name and description
-  - Icon/badge
-  - Unlock date
-  - Progress toward locked achievements
+### 3.6 Leaderboard System
 
-### 3.7 Administrative Functions
+**FR-LB-001: Global Leaderboard**
+- Rank by total score
+- Top 100 users
+- User's rank highlighted
+- Tie-breaker: earliest achievement
 
-#### FR-7.1: Platform Statistics
-- **Description**: Dashboard with system-wide metrics
-- **Metrics**:
-  - Total users, active users
-  - Total questions, quizzes
-  - Average scores
-  - Popular categories
-  - System health indicators
+**FR-LB-002: Category Leaderboards**
+- Separate leaderboard per category
+- Top 50 per category
+- Category-specific scores
 
-#### FR-7.2: User Management
-- **Description**: Admin can manage user accounts
-- **Capabilities**:
-  - View all users with filters
-  - Activate/deactivate accounts
-  - Change user roles
-  - View user activity logs
-  - Delete users
+**FR-LB-003: User Rank Display**
+- Global rank
+- Category ranks
+- Rank change indicators
+- Percentile position
 
-#### FR-7.3: Content Moderation
-- **Description**: Review and manage flagged content
-- **Capabilities**:
-  - View flagged questions
-  - Approve or reject flags
-  - Edit or archive questions
-  - Ban users for violations
+### 3.7 Achievement System
 
-#### FR-7.4: System Configuration
-- **Description**: Configure platform settings
-- **Settings**:
-  - Default quiz parameters
-  - Achievement criteria
-  - Point values
-  - Time limits
+**FR-AS-001: Achievement Types**
+- Quiz milestones (10, 50, 100 quizzes)
+- Score achievements (90%+, perfect scores)
+- Streak achievements (7, 30, 100 days)
+- Category mastery
+- Bug hunting achievements
+
+**FR-AS-002: Achievement Tracking**
+- Automatic progress monitoring
+- Unlock when criteria met
+- Notifications on unlock
+- Achievement history
+
+**FR-AS-003: Achievement Display**
+- Unlocked achievements
+- Locked achievements with progress
+- Achievement details
+- Unlock dates
+
+### 3.8 Admin Dashboard
+
+**FR-AD-001: Platform Statistics**
+- Total users
+- Total questions
+- Total quizzes completed
+- Active users (last 7 days)
+- Question distribution by category
+- Average user performance
+
+**FR-AD-002: User Management**
+- View all users
+- Search users
+- Edit user details
+- Change user roles
+- View user statistics
+- Deactivate accounts
+
+**FR-AD-003: Question Management**
+- View all questions
+- Filter by status, category, difficulty
+- Search questions
+- Bulk operations (multi-select delete)
+- Question statistics
+- Review flagged questions
+
+**FR-AD-004: Flagged Question Review**
+- View all flagged questions
+- See flag reasons
+- Edit flagged questions
+- Resolve flags
+- Track resolution history
+
+### 3.9 Excel Upload System
+
+**FR-EU-001: Template Download**
+- Download pre-formatted Excel template
+- Includes headers and sample data
+- Column format:
+  - question, optionA, optionB, optionC, optionD
+  - correctAnswer, category, difficulty
+  - explanation, tags, points, type, status
+
+**FR-EU-002: Bulk Upload**
+- Upload Excel file
+- Parse and validate each row
+- Create question records
+- Report success/failed counts
+- Detailed error messages with row numbers
+
+**FR-EU-003: Upload Validation**
+- Required fields: question, options, correctAnswer, category, difficulty
+- Minimum 2 options
+- Correct answer must be valid index (0-3)
+- Difficulty: foundation, advanced, expert
+- Type: single-choice, multiple-choice, true-false
+- Status: published, draft, archived
+
+**FR-EU-004: Dynamic Category Creation** ⭐
+- Extract categories from uploaded questions
+- Auto-create new categories
+- Update category list
+- No hardcoded categories
+- Categories fetched via API: GET /api/questions-upload/categories
+
+**FR-EU-005: Upload History**
+- Log all uploads
+- Track: date, admin user, file name, success/failed counts
+- Viewable by admins
+- Searchable and exportable
 
 ---
 
@@ -317,582 +445,747 @@ The ISTQB Practice Q&A Platform is a web-based learning management system design
 
 ### 4.1 Performance Requirements
 
-#### NFR-1.1: Response Time
-- API endpoints must respond within 200ms for 95% of requests
-- Database queries optimized with proper indexing
-- Complex analytics queries: <1 second
+**NFR-PF-001: Response Time**
+- Simple queries: < 200ms
+- Complex queries: < 500ms
+- Quiz start: < 1000ms
+- Excel upload (100 questions): < 5000ms
 
-#### NFR-1.2: Throughput
-- Support 1000 concurrent users
-- Handle 10,000 API requests per minute
+**NFR-PF-002: Throughput**
+- Minimum: 100 concurrent users
+- Target: 500 concurrent users
+- Maximum: 1000 concurrent users
 
-#### NFR-1.3: Scalability
-- Horizontal scaling capability
-- Stateless API design for load balancing
-- Database sharding support for growth
+**NFR-PF-003: Database Performance**
+- Indexed queries: < 50ms
+- Aggregation queries: < 500ms
+- Write operations: < 100ms
+
+**NFR-PF-004: Frontend Performance**
+- Initial page load: < 3 seconds
+- Route transitions: < 500ms
+- Component rendering: < 100ms
 
 ### 4.2 Security Requirements
 
-#### NFR-2.1: Authentication Security
-- Passwords hashed with bcrypt (salt rounds: 10)
-- JWT tokens with configurable expiration
-- HTTPS required for all communications
-- Rate limiting on authentication endpoints
+**NFR-SC-001: Authentication Security**
+- JWT tokens with 30-day expiry
+- Secure token storage
+- Token validation on every request
+- Automatic token refresh
 
-#### NFR-2.2: Authorization
-- Role-based access control (RBAC)
-- Endpoint-level permission checks
-- Resource ownership validation
+**NFR-SC-002: Password Security**
+- bcrypt hashing with salt rounds (10+)
+- Password strength requirements enforced
+- No plain-text storage
+- Secure password reset
 
-#### NFR-2.3: Data Protection
-- Input validation and sanitization
-- SQL/NoSQL injection prevention
-- XSS protection with Helmet.js
+**NFR-SC-003: Data Protection**
+- HTTPS/TLS for all communications
+- Environment variables for secrets
+- No sensitive data in logs
+- Input sanitization
+
+**NFR-SC-004: API Security**
+- Rate limiting: 100 requests per 15 minutes
 - CORS configuration
+- Helmet.js security headers
+- Input validation
+- XSS prevention
+- NoSQL injection prevention
 
-#### NFR-2.4: API Security
-- Rate limiting (100 requests/15 minutes per IP)
-- Request size limits
-- API versioning
-- Error messages without sensitive data
+**NFR-SC-005: Authorization**
+- Role-based access control (RBAC)
+- Middleware authorization checks
+- Resource ownership verification
+- Admin route protection
 
-### 4.3 Reliability Requirements
+### 4.3 Usability Requirements
 
-#### NFR-3.1: Availability
-- 99.5% uptime target
-- Graceful degradation on failures
-- Health check endpoint
+**NFR-US-001: User Interface**
+- Intuitive navigation
+- Consistent design language
+- Clear error messages
+- Loading indicators
+- Success confirmations
 
-#### NFR-3.2: Error Handling
-- Centralized error handling middleware
-- Consistent error response format
-- Logging of all errors
+**NFR-US-002: Mobile Responsiveness** ⭐
+- Responsive design (320px to 2560px)
+- Touch-friendly controls (min 44x44px)
+- Readable text sizes
+- Optimized layouts per breakpoint
+- Tailwind CSS breakpoints: sm, md, lg, xl
+
+**NFR-US-003: Browser Compatibility**
+- Chrome (latest 2 versions)
+- Firefox (latest 2 versions)
+- Safari (latest 2 versions)
+- Edge (latest 2 versions)
+- Mobile browsers (iOS Safari, Chrome Mobile)
+
+### 4.4 Reliability Requirements
+
+**NFR-RL-001: Availability**
+- Target: 99.5% uptime
+- Excluding planned maintenance
+- Monthly uptime measurement
+
+**NFR-RL-002: Error Handling**
+- Try-catch blocks
+- Error middleware
 - User-friendly error messages
+- Error logging
+- Automatic recovery where possible
 
-#### NFR-3.3: Data Integrity
-- Transaction support where needed
-- Data validation at model level
-- Referential integrity enforcement
-- Regular database backups
+**NFR-RL-003: Data Integrity**
+- Database constraints
+- Validation at multiple layers
+- Regular backups (daily)
+- Point-in-time recovery
 
-### 4.4 Usability Requirements
+### 4.5 Scalability Requirements
 
-#### NFR-4.1: API Design
-- RESTful conventions
-- Consistent naming patterns
-- Clear endpoint documentation
-- Intuitive request/response formats
+**NFR-SL-001: Data Scalability**
+- Support 10,000+ users
+- Support 10,000+ questions
+- Support 100,000+ quiz sessions
+- Database indexing
+- Query optimization
 
-#### NFR-4.2: Internationalization
-- Multi-language support for questions
-- Language preference per user
-- UTF-8 encoding throughout
+**NFR-SL-002: Horizontal Scalability**
+- Stateless API design
+- Load balancer support
+- Database replication capability
+- Caching layer ready
 
-### 4.5 Maintainability Requirements
+### 4.6 Maintainability Requirements
 
-#### NFR-5.1: Code Quality
-- Modular architecture (MVC pattern)
-- Clear separation of concerns
-- Comprehensive code comments
-- Consistent coding style
+**NFR-MT-001: Code Quality**
+- ESLint compliance
+- Consistent coding standards
+- Meaningful variable names
+- Proper commenting
+- DRY principle
 
-#### NFR-5.2: Testing
-- Unit tests for business logic
-- Integration tests for API endpoints
-- 80%+ code coverage target
-- Automated test execution
+**NFR-MT-002: Documentation**
+- API documentation
+- Code comments
+- README files
+- Architecture diagrams
+- User guides
 
-#### NFR-5.3: Documentation
-- API documentation (OpenAPI/Swagger)
-- Code documentation
-- Deployment guides
-- Database schema documentation
-
-### 4.6 Compatibility Requirements
-
-#### NFR-6.1: Browser Support
-- Modern browsers (Chrome, Firefox, Safari, Edge)
-- Mobile browser support
-
-#### NFR-6.2: Database
-- MongoDB 4.4+
-- Mongoose ODM 8.0+
-
-#### NFR-6.3: Node.js
-- Node.js 18+ LTS
-- npm 9+
+**NFR-MT-003: Logging**
+- HTTP request logging (morgan)
+- Error logging
+- Authentication events
+- Admin actions
+- Performance metrics
 
 ---
 
 ## 5. System Architecture
 
 ### 5.1 Architecture Pattern
-**Three-Tier Architecture**:
-1. **Presentation Layer**: React Frontend (separate repository)
-2. **Application Layer**: Express.js API (this system)
-3. **Data Layer**: MongoDB Database
 
-### 5.2 Design Patterns
-- **MVC (Model-View-Controller)**: Separation of data, business logic, and routing
-- **Middleware Pattern**: Request processing pipeline
-- **Repository Pattern**: Data access abstraction
-- **Factory Pattern**: Object creation (e.g., quiz generation)
+**Three-Tier Architecture:**
 
-### 5.3 Technology Stack
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js 4.18+
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT (jsonwebtoken)
-- **Security**: Helmet.js, bcryptjs, express-rate-limit
-- **Validation**: express-validator
-- **Testing**: Jest, Supertest
-- **Development**: Nodemon, Morgan (logging)
-- **Utilities**: dotenv, cors, compression
+**Tier 1: Presentation Layer (Frontend)**
+- React 18 with Vite
+- Components: Pages, UI components, Services
+- Responsibilities: UI rendering, user input, API communication
+
+**Tier 2: Application Layer (Backend)**
+- Node.js with Express.js
+- Components: Controllers, Routes, Middleware, Services
+- Responsibilities: Business logic, authentication, validation
+
+**Tier 3: Data Layer (Database)**
+- MongoDB with Mongoose ODM
+- Components: Models, Collections, Indexes
+- Responsibilities: Data persistence, retrieval, integrity
+
+### 5.2 Project Structure
+
+```
+QA_ExamPrep/
+├── client/client/src/
+│   ├── components/
+│   │   ├── ui/                    # Base UI components
+│   │   └── FunctionalBugs/        # Bug simulators
+│   ├── pages/
+│   │   ├── Dashboard.jsx
+│   │   ├── Quiz.jsx
+│   │   ├── Questions.jsx
+│   │   ├── BugHunting.jsx
+│   │   ├── Admin.jsx
+│   │   └── QuestionUpload.jsx
+│   ├── services/
+│   │   ├── api.js                 # API client
+│   │   └── categoryService.js     # Category API
+│   └── App.jsx
+│
+├── controllers/
+│   ├── authController.js
+│   ├── questionController.js
+│   ├── quizController.js
+│   ├── progressController.js
+│   ├── leaderboardController.js
+│   ├── achievementController.js
+│   ├── adminController.js
+│   ├── bugHuntingController.js
+│   └── questionUploadController.js
+│
+├── models/
+│   ├── User.js
+│   ├── Question.js
+│   ├── Quiz.js
+│   ├── Progress.js
+│   ├── Achievement.js
+│   ├── BugScenario.js
+│   └── BugSubmission.js
+│
+├── routes/
+│   ├── auth.js
+│   ├── questions.js
+│   ├── quiz.js
+│   ├── progress.js
+│   ├── leaderboard.js
+│   ├── achievements.js
+│   ├── admin.js
+│   ├── bugHunting.js
+│   └── questionUpload.js
+│
+├── middleware/
+│   ├── auth.js
+│   ├── errorHandler.js
+│   └── rateLimiter.js
+│
+└── server.js
+```
 
 ---
 
 ## 6. Data Models
 
-### 6.1 User Model
+### 6.1 Core Models
+
+**User Model**
 ```javascript
 {
-  username: String (unique, 3-30 chars),
-  email: String (unique, valid format),
-  password: String (hashed, min 6 chars),
-  role: Enum ['user', 'admin', 'moderator'],
-  profile: {
-    firstName: String,
-    lastName: String,
-    country: String,
-    preferredLanguage: String (default: 'en'),
-    avatar: String (URL)
-  },
+  _id: ObjectId,
+  username: String (required, unique),
+  email: String (required, unique),
+  password: String (required, hashed),
+  role: String (enum: ['user', 'admin']),
   stats: {
     totalQuizzes: Number,
     totalQuestions: Number,
     correctAnswers: Number,
     totalScore: Number,
-    averageScore: Number,
-    streak: Number,
-    lastActiveDate: Date
+    averageScore: Number
   },
-  achievements: [ObjectId] (ref: Achievement),
-  isActive: Boolean,
-  isEmailVerified: Boolean,
-  lastLogin: Date,
+  streak: {
+    current: Number,
+    longest: Number,
+    lastStudyDate: Date
+  },
   createdAt: Date,
   updatedAt: Date
 }
 ```
 
-### 6.2 Question Model
+**Question Model**
 ```javascript
 {
-  questionText: Map<String, String> (multi-language),
-  type: Enum ['single-choice', 'multiple-choice', 'true-false'],
+  _id: ObjectId,
+  questionText: { en: String },
   options: [{
-    text: Map<String, String>,
+    text: { en: String },
     isCorrect: Boolean
   }],
-  explanation: Map<String, String>,
-  category: Enum [8 categories],
-  difficulty: Enum ['foundation', 'advanced', 'expert'],
-  syllabus: String (default: 'ISTQB-CTFL-2018'),
+  correctAnswer: Number,
+  category: String (indexed),
+  difficulty: String (enum: ['foundation', 'advanced', 'expert']),
+  type: String (enum: ['single-choice', 'multiple-choice', 'true-false']),
+  explanation: { en: String },
   tags: [String],
-  points: Number (1-10),
-  statistics: {
-    timesAnswered: Number,
-    timesCorrect: Number,
-    averageTime: Number
-  },
-  status: Enum ['draft', 'published', 'archived', 'flagged'],
-  createdBy: ObjectId (ref: User),
-  contributors: [{
-    user: ObjectId,
-    contribution: String,
-    date: Date
-  }],
-  flags: [{
-    user: ObjectId,
-    reason: String,
-    date: Date
-  }],
-  votes: {
-    upvotes: Number,
-    downvotes: Number
-  },
+  points: Number,
+  status: String (enum: ['published', 'draft', 'archived', 'flagged']),
   createdAt: Date,
   updatedAt: Date
 }
 ```
 
-### 6.3 Quiz Model
+**Quiz Model**
 ```javascript
 {
-  user: ObjectId (ref: User),
-  mode: Enum ['practice', 'exam', 'timed', 'category'],
+  _id: ObjectId,
+  user: ObjectId (ref: 'User', indexed),
+  mode: String (enum: ['practice', 'exam', 'timed']),
+  status: String (enum: ['in-progress', 'completed'], indexed),
+  settings: {
+    category: String,
+    difficulty: String,
+    numberOfQuestions: Number
+  },
   questions: [{
-    question: ObjectId (ref: Question),
+    question: ObjectId (ref: 'Question'),
     userAnswer: [Number],
     isCorrect: Boolean,
     timeSpent: Number,
     answeredAt: Date
   }],
-  settings: {
-    language: String,
-    category: String,
-    difficulty: String,
-    numberOfQuestions: Number,
-    timeLimit: Number,
-    randomOrder: Boolean
-  },
   score: {
     correct: Number,
     incorrect: Number,
-    unanswered: Number,
-    percentage: Number,
-    totalPoints: Number
+    percentage: Number
   },
-  status: Enum ['in-progress', 'completed', 'abandoned'],
-  startedAt: Date,
-  completedAt: Date,
-  totalTime: Number,
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-### 6.4 Progress Model
-```javascript
-{
-  user: ObjectId (ref: User, unique),
-  categoryProgress: [{
-    category: String,
-    questionsAnswered: Number,
-    correctAnswers: Number,
-    averageTime: Number,
-    lastPracticed: Date,
-    masteryLevel: Number (0-100)
-  }],
-  weakAreas: [{
-    category: String,
-    accuracy: Number,
-    recommendedQuestions: Number
-  }],
-  studyStreak: {
-    current: Number,
-    longest: Number,
-    lastStudyDate: Date
+  timing: {
+    startedAt: Date,
+    completedAt: Date,
+    totalTime: Number
   },
-  milestones: [{
-    type: String,
-    achieved: Boolean,
-    date: Date
-  }],
-  updatedAt: Date
-}
-```
-
-### 6.5 Achievement Model
-```javascript
-{
-  name: String (unique),
-  description: String,
-  icon: String,
-  category: Enum ['milestone', 'accuracy', 'streak', 'mastery', 'speed', 'participation'],
-  criteria: {
-    type: String,
-    threshold: Number,
-    category: String (optional)
-  },
-  points: Number,
-  rarity: Enum ['common', 'rare', 'epic', 'legendary'],
   createdAt: Date
 }
 ```
+
+**Progress Model**
+```javascript
+{
+  _id: ObjectId,
+  user: ObjectId (ref: 'User', unique),
+  overall: {
+    totalQuizzes: Number,
+    totalQuestions: Number,
+    correctAnswers: Number,
+    averageScore: Number
+  },
+  categories: [{
+    category: String,
+    questionsAttempted: Number,
+    questionsCorrect: Number,
+    averageScore: Number,
+    masteryLevel: Number
+  }],
+  weakAreas: [{
+    category: String,
+    score: Number,
+    priority: String
+  }],
+  updatedAt: Date
+}
+```
+
+**BugScenario Model**
+```javascript
+{
+  _id: ObjectId,
+  title: String,
+  description: String,
+  category: String,
+  difficulty: String (enum: ['easy', 'medium', 'hard']),
+  simulatorComponent: String,
+  knownBugs: [{
+    id: String,
+    description: String,
+    severity: String,
+    expectedBehavior: String,
+    actualBehavior: String
+  }],
+  hints: [String],
+  learningPoints: [String],
+  createdAt: Date
+}
+```
+
+### 6.2 Database Indexes
+
+**Critical Indexes:**
+- users: email (unique), username (unique)
+- questions: category, difficulty, status, (category + difficulty + status)
+- quizzes: user, status, (user + status)
+- progress: user (unique)
 
 ---
 
 ## 7. API Specifications
 
-### 7.1 Authentication Endpoints
+### 7.1 Base URL
+```
+Production: https://api.qaarena.com
+Development: http://localhost:5001/api
+```
 
-#### POST /api/auth/register
-- **Description**: Register new user
-- **Request Body**: `{ username, email, password, profile }`
-- **Response**: `{ token, user }`
-- **Status Codes**: 201 (Created), 400 (Validation Error), 409 (Conflict)
+### 7.2 Authentication
 
-#### POST /api/auth/login
-- **Description**: Authenticate user
-- **Request Body**: `{ email, password }`
-- **Response**: `{ token, user }`
-- **Status Codes**: 200 (OK), 401 (Unauthorized)
+All protected endpoints require JWT token in Authorization header:
+```
+Authorization: Bearer {token}
+```
 
-#### GET /api/auth/me
-- **Description**: Get current user profile
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ user }`
-- **Status Codes**: 200 (OK), 401 (Unauthorized)
+### 7.3 Core Endpoints
 
-### 7.2 Question Endpoints
+**Authentication**
+```
+POST   /api/auth/register          Register new user
+POST   /api/auth/login             Login user
+GET    /api/auth/me                Get current user
+```
 
-#### GET /api/questions
-- **Description**: List questions with filters
-- **Query Parameters**: `category, difficulty, status, page, limit, language`
-- **Response**: `{ questions, pagination }`
-- **Status Codes**: 200 (OK)
+**Questions**
+```
+GET    /api/questions              List questions (paginated)
+POST   /api/questions              Create question (admin)
+PUT    /api/questions/:id          Update question (admin)
+DELETE /api/questions/:id          Delete question (admin)
+POST   /api/questions/bulk-delete  Delete multiple (admin)
+POST   /api/questions/:id/flag     Flag question
+```
 
-#### POST /api/questions
-- **Description**: Create new question (Admin/Moderator)
-- **Headers**: `Authorization: Bearer <token>`
-- **Request Body**: Question object
-- **Response**: `{ question }`
-- **Status Codes**: 201 (Created), 401 (Unauthorized), 403 (Forbidden)
+**Quiz**
+```
+POST   /api/quiz/start             Start new quiz
+GET    /api/quiz/in-progress       Get in-progress quiz ⭐
+POST   /api/quiz/answer            Submit answer
+POST   /api/quiz/:id/complete      Complete quiz
+GET    /api/quiz/:id               Get quiz by ID
+GET    /api/quiz/user/history      Get quiz history
+```
 
-#### PUT /api/questions/:id
-- **Description**: Update question
-- **Headers**: `Authorization: Bearer <token>`
-- **Request Body**: Partial question object
-- **Response**: `{ question }`
-- **Status Codes**: 200 (OK), 404 (Not Found)
+**Progress**
+```
+GET    /api/progress               Get user progress
+GET    /api/progress/categories    Get category progress
+GET    /api/progress/weak-areas    Get weak areas
+GET    /api/progress/streak        Get study streak
+```
 
-#### DELETE /api/questions/:id
-- **Description**: Delete question (Admin)
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ message }`
-- **Status Codes**: 200 (OK), 404 (Not Found)
+**Leaderboard**
+```
+GET    /api/leaderboard/global     Global rankings
+GET    /api/leaderboard/category/:cat  Category rankings
+GET    /api/leaderboard/rank       User's rank
+```
 
-### 7.3 Quiz Endpoints
+**Admin**
+```
+GET    /api/admin/stats            Platform statistics
+GET    /api/admin/users            List all users
+PUT    /api/admin/users/:id        Update user
+GET    /api/admin/questions/flagged  Flagged questions
+```
 
-#### POST /api/quiz/start
-- **Description**: Start new quiz session
-- **Headers**: `Authorization: Bearer <token>`
-- **Request Body**: `{ mode, settings }`
-- **Response**: `{ quiz }`
-- **Status Codes**: 201 (Created)
+**Question Upload**
+```
+GET    /api/questions-upload/template     Download template
+POST   /api/questions-upload/upload       Upload Excel file
+GET    /api/questions-upload/categories   Get categories ⭐
+GET    /api/questions-upload/stats        Upload statistics
+```
 
-#### POST /api/quiz/answer
-- **Description**: Submit answer to question
-- **Headers**: `Authorization: Bearer <token>`
-- **Request Body**: `{ quizId, questionId, answer, timeSpent }`
-- **Response**: `{ isCorrect, explanation (if practice mode) }`
-- **Status Codes**: 200 (OK)
+**Bug Hunting**
+```
+GET    /api/bug-hunting/scenarios  List scenarios
+GET    /api/bug-hunting/scenarios/:id  Get scenario details
+POST   /api/bug-hunting/submit     Submit bug report
+GET    /api/bug-hunting/submissions  User's submissions
+```
 
-#### POST /api/quiz/:id/complete
-- **Description**: Complete quiz and get results
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ quiz, results, newAchievements }`
-- **Status Codes**: 200 (OK)
+### 7.4 Response Format
 
-#### GET /api/quiz/user/history
-- **Description**: Get user's quiz history
-- **Headers**: `Authorization: Bearer <token>`
-- **Query Parameters**: `page, limit, mode`
-- **Response**: `{ quizzes, pagination }`
-- **Status Codes**: 200 (OK)
+**Success Response:**
+```json
+{
+  "success": true,
+  "data": {
+    // Response data
+  }
+}
+```
 
-### 7.4 Progress Endpoints
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Error message"
+}
+```
 
-#### GET /api/progress
-- **Description**: Get overall user progress
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ progress }`
-- **Status Codes**: 200 (OK)
+### 7.5 Status Codes
 
-#### GET /api/progress/categories
-- **Description**: Get category-wise progress
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ categoryProgress }`
-- **Status Codes**: 200 (OK)
-
-#### GET /api/progress/weak-areas
-- **Description**: Identify weak areas
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ weakAreas }`
-- **Status Codes**: 200 (OK)
-
-#### GET /api/progress/streak
-- **Description**: Get study streak information
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ streak }`
-- **Status Codes**: 200 (OK)
-
-### 7.5 Leaderboard Endpoints
-
-#### GET /api/leaderboard/global
-- **Description**: Get global leaderboard
-- **Query Parameters**: `page, limit`
-- **Response**: `{ leaderboard, pagination }`
-- **Status Codes**: 200 (OK)
-
-#### GET /api/leaderboard/rank
-- **Description**: Get user's rank
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ rank, percentile, score }`
-- **Status Codes**: 200 (OK)
-
-### 7.6 Achievement Endpoints
-
-#### GET /api/achievements
-- **Description**: Get all achievements
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ achievements, userAchievements }`
-- **Status Codes**: 200 (OK)
-
-#### POST /api/achievements/check
-- **Description**: Check for new achievements
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ newAchievements }`
-- **Status Codes**: 200 (OK)
-
-### 7.7 Admin Endpoints
-
-#### GET /api/admin/stats
-- **Description**: Get platform statistics (Admin)
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ stats }`
-- **Status Codes**: 200 (OK), 403 (Forbidden)
-
-#### GET /api/admin/users
-- **Description**: List all users (Admin)
-- **Headers**: `Authorization: Bearer <token>`
-- **Query Parameters**: `page, limit, role, status`
-- **Response**: `{ users, pagination }`
-- **Status Codes**: 200 (OK), 403 (Forbidden)
-
-#### GET /api/admin/questions/flagged
-- **Description**: Get flagged questions (Admin/Moderator)
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ flaggedQuestions }`
-- **Status Codes**: 200 (OK), 403 (Forbidden)
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 429: Too Many Requests
+- 500: Internal Server Error
 
 ---
 
-## 8. Security Requirements
+## 8. Security & Performance
 
-### 8.1 Authentication & Authorization
-- JWT-based authentication with configurable expiration
-- Role-based access control (RBAC)
-- Password hashing with bcrypt (10 salt rounds)
-- Secure token storage (httpOnly cookies recommended for production)
+### 8.1 Security Measures
 
-### 8.2 Input Validation
-- express-validator for request validation
-- Mongoose schema validation
-- Sanitization of user inputs
-- File upload restrictions (if applicable)
+**Authentication & Authorization:**
+- JWT tokens with 30-day expiry
+- bcrypt password hashing (10 salt rounds)
+- Role-based access control
+- Token validation middleware
 
-### 8.3 API Security
-- Helmet.js for security headers
+**API Protection:**
+- Rate limiting: 100 requests per 15 minutes
 - CORS configuration
-- Rate limiting (express-rate-limit)
-- Request size limits
-- XSS protection
+- Helmet.js security headers
+- Input validation with express-validator
+- XSS prevention
 - NoSQL injection prevention
 
-### 8.4 Data Security
-- Environment variables for sensitive data
-- Secure database connections
-- Password fields excluded from queries by default
-- Audit logging for sensitive operations
+**Data Protection:**
+- HTTPS/TLS encryption
+- Environment variables for secrets
+- No sensitive data in logs
+- Secure password reset flow
+
+### 8.2 Performance Optimization
+
+**Database:**
+- Indexes on frequently queried fields
+- Query optimization
+- Connection pooling
+- Pagination for large datasets
+
+**Frontend:**
+- Code splitting
+- Lazy loading
+- Asset optimization
+- Responsive images
+
+**Caching:**
+- Browser caching
+- API response caching (where appropriate)
+- Static asset caching
+
+### 8.3 Monitoring & Logging
+
+**Logging:**
+- HTTP request logging (morgan)
+- Error logging
+- Authentication events
+- Admin actions
+
+**Monitoring:**
+- Server uptime
+- API response times
+- Error rates
+- Database performance
 
 ---
 
-## 9. Performance Requirements
+## 9. Key Features Summary
 
-### 9.1 Database Optimization
-- Indexes on frequently queried fields:
-  - User: username, email
-  - Question: category, difficulty, status, tags
-  - Quiz: user, status, createdAt
-  - Progress: user
-- Compound indexes for complex queries
-- Virtual fields for computed properties
+### 9.1 Quiz Resume Feature ⭐
 
-### 9.2 Caching Strategy
-- In-memory caching for frequently accessed data
-- Redis integration (optional, for production)
-- Cache invalidation on data updates
+**Problem Solved:** Users can now resume quizzes after interruptions
 
-### 9.3 Query Optimization
-- Pagination for large result sets
-- Field selection to reduce payload size
-- Aggregation pipelines for analytics
-- Lean queries where population not needed
+**Implementation:**
+- Backend: Quiz status tracking ('in-progress', 'completed')
+- Frontend: Restore previous answers, jump to first unanswered
+- Dashboard: "Resume Quiz" banner with accurate progress
+- Validation: Prevent starting new quiz while one is in-progress
 
-### 9.4 Response Optimization
-- Compression middleware
-- JSON response optimization
-- Efficient serialization
+**User Flow:**
+1. User starts quiz, answers 2 out of 5 questions
+2. Page refreshes (or timeout/close)
+3. Dashboard shows "Resume Quiz" banner: "Progress: 2/5 answered"
+4. User clicks Resume
+5. Quiz loads at question 3 (first unanswered)
+6. Previous 2 answers restored
+7. User continues normally
+
+### 9.2 Dynamic Categories ⭐
+
+**Problem Solved:** Categories auto-created from uploaded questions
+
+**Implementation:**
+- Backend: GET /api/questions-upload/categories
+- Frontend: categoryService.js fetches from API
+- No hardcoded category arrays
+- Used in Dashboard, Questions, Leaderboard
+
+**Benefits:**
+- Flexible content management
+- No code changes for new categories
+- Automatic updates
+
+### 9.3 Multi-Select Delete ⭐
+
+**Problem Solved:** Bulk delete questions efficiently
+
+**Implementation:**
+- Frontend: Checkboxes for each question, "Select All"
+- Backend: DELETE endpoint accepts array of IDs
+- Confirmation dialog before deletion
+- Audit trail logging
+
+### 9.4 Excel Bulk Upload ⭐
+
+**Problem Solved:** Upload hundreds of questions quickly
+
+**Implementation:**
+- Download pre-formatted template
+- Separate columns for each option (optionA, optionB, etc.)
+- Comprehensive validation
+- Detailed error reporting
+- Dynamic category creation
+
+**Template Format:**
+```
+question | optionA | optionB | optionC | optionD | correctAnswer | category | difficulty | explanation | tags | points | type | status
+```
+
+### 9.5 Mobile Responsive Design ⭐
+
+**Problem Solved:** Optimal experience on all devices
+
+**Implementation:**
+- Tailwind CSS utility classes
+- Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
+- Touch-friendly controls (min 44x44px)
+- Responsive layouts and typography
 
 ---
 
 ## 10. Deployment Requirements
 
-### 10.1 Environment Configuration
-- Development, staging, production environments
-- Environment-specific .env files
-- Configuration management
+### 10.1 Environment Variables
 
-### 10.2 Dependencies
-- Node.js 18+ LTS
-- MongoDB 4.4+
-- npm packages as specified in package.json
+**Backend (.env):**
+```
+NODE_ENV=production
+PORT=5001
+MONGO_URI=mongodb+srv://...
+JWT_SECRET=your-secret-key
+JWT_EXPIRE=30d
+CLIENT_URL=https://your-frontend.com
+```
 
-### 10.3 Deployment Process
-1. Install dependencies: `npm install`
-2. Configure environment: Copy `.env.example` to `.env`
-3. Seed database: `npm run seed`
-4. Run tests: `npm test`
-5. Start server: `npm start` (production) or `npm run dev` (development)
+**Frontend (.env):**
+```
+VITE_API_URL=https://your-backend.com/api
+```
 
-### 10.4 Monitoring & Logging
-- Morgan for HTTP request logging
-- Error logging to files/external service
-- Health check endpoint: GET /api/health
-- Performance monitoring (optional: New Relic, DataDog)
+### 10.2 Hosting Recommendations
 
-### 10.5 Backup & Recovery
-- Regular database backups
-- Backup retention policy
-- Disaster recovery plan
-- Data migration scripts
+**Frontend:** Vercel, Netlify  
+**Backend:** Heroku, Railway, Render  
+**Database:** MongoDB Atlas  
+**SSL/TLS:** Let's Encrypt  
 
----
+### 10.3 Minimum Server Requirements
 
-## Appendix A: Question Categories
+**Backend Server:**
+- CPU: 1 vCPU
+- RAM: 512 MB (minimum), 1 GB (recommended)
+- Storage: 10 GB
+- Node.js 18+
 
-1. **Fundamentals**: Basic testing concepts and terminology
-2. **Testing Throughout SDLC**: Testing in different lifecycle models
-3. **Static Testing**: Reviews, inspections, static analysis
-4. **Test Techniques**: Black-box, white-box, experience-based techniques
-5. **Test Management**: Planning, monitoring, control, defect management
-6. **Tool Support**: Test automation, test management tools
-7. **Agile Testing**: Agile methodologies, continuous integration
-8. **Test Automation**: Automation frameworks, best practices
+**Database:**
+- MongoDB 6+
+- Storage: 10 GB (initial), scalable
+- RAM: 2 GB (recommended)
 
 ---
 
-## Appendix B: Achievement Examples
+## 11. Testing Requirements
 
-- **First Steps**: Complete your first quiz
-- **Dedicated Learner**: Complete 10 quizzes
-- **Quiz Master**: Complete 100 quizzes
-- **Perfect Score**: Achieve 100% on any quiz
-- **Consistency King**: Maintain 7-day study streak
-- **Category Expert**: Achieve 90%+ accuracy in a category
-- **Speed Demon**: Complete quiz in under 5 minutes
-- **Rising Star**: Reach top 100 on leaderboard
+### 11.1 Test Coverage
+
+- Unit tests for critical functions
+- Integration tests for API endpoints
+- E2E tests for user flows
+- Target coverage: 70%+
+
+### 11.2 Test Scenarios
+
+**Authentication:**
+- User registration
+- User login
+- Token validation
+- Role-based access
+
+**Quiz System:**
+- Start quiz
+- Answer questions
+- Resume quiz
+- Complete quiz
+- Prevent multiple quizzes
+
+**Question Management:**
+- Create question
+- Update question
+- Delete question
+- Bulk delete
+- Flag question
+
+**Excel Upload:**
+- Template download
+- Valid upload
+- Invalid data handling
+- Error reporting
 
 ---
 
-## Document Control
+## 12. Maintenance & Support
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | Nov 2024 | Development Team | Initial release |
+### 12.1 Backup Strategy
+
+- Daily automated backups
+- 30-day retention
+- Point-in-time recovery
+- Tested recovery procedures
+
+### 12.2 Update Schedule
+
+- Security patches: Immediate
+- Bug fixes: Weekly
+- Feature updates: Monthly
+- Major releases: Quarterly
+
+### 12.3 Support Channels
+
+- Email: support@qaarena.com
+- GitHub Issues
+- Documentation: README.md
+
+---
+
+## 13. Future Enhancements (Roadmap)
+
+**Phase 2 (Planned):**
+- Mobile app (React Native)
+- AI-powered question recommendations
+- Video explanations
+- Study groups
+- Advanced analytics
+- Multi-language UI
+- Offline mode
+- PDF export of progress reports
+
+---
+
+## Document Approval
+
+| Role | Name | Signature | Date |
+|------|------|-----------|------|
+| Project Manager | | | |
+| Lead Developer | | | |
+| QA Lead | | | |
+| Stakeholder | | | |
 
 ---
 
 **End of Document**
+
+*This SRD is a living document and will be updated as the system evolves.*
