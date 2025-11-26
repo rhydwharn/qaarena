@@ -20,15 +20,28 @@ export default function Dashboard() {
   const [numQuestions, setNumQuestions] = useState(10);
   const [allQuestions, setAllQuestions] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [inProgressQuiz, setInProgressQuiz] = useState(null);
 
   useEffect(() => {
     loadCategories();
     loadDashboardData();
+    checkInProgressQuiz();
   }, []);
 
   const loadCategories = async () => {
     const cats = await getCategories();
     setCategories(formatCategoriesForSelect(cats));
+  };
+
+  const checkInProgressQuiz = async () => {
+    try {
+      const response = await quizAPI.getInProgress();
+      if (response.data.data.quiz) {
+        setInProgressQuiz(response.data.data.quiz);
+      }
+    } catch (error) {
+      console.error('Failed to check for in-progress quiz:', error);
+    }
   };
 
   const normalizePercent = (value) => {
@@ -108,6 +121,19 @@ export default function Dashboard() {
 
   const startQuiz = async () => {
     try {
+      // Check if there's an in-progress quiz
+      if (inProgressQuiz) {
+        const confirmed = window.confirm(
+          'You have an unfinished quiz. Would you like to resume it instead of starting a new one?'
+        );
+        if (confirmed) {
+          navigate(`/quiz/${inProgressQuiz._id}`);
+          return;
+        } else {
+          return; // User chose not to resume, don't start new quiz
+        }
+      }
+
       if (!category) {
         alert('Please select a category');
         return;
@@ -124,7 +150,19 @@ export default function Dashboard() {
       navigate(`/quiz/${response.data.data.quiz._id}`);
     } catch (error) {
       console.error('Failed to start quiz:', error);
-      alert(error.response?.data?.message || 'Failed to start quiz');
+      const errorMsg = error.response?.data?.message || 'Failed to start quiz';
+      
+      // If error is about existing quiz, prompt to resume
+      if (errorMsg.includes('unfinished quiz')) {
+        const confirmed = window.confirm(
+          errorMsg + ' Would you like to resume your unfinished quiz?'
+        );
+        if (confirmed && inProgressQuiz) {
+          navigate(`/quiz/${inProgressQuiz._id}`);
+        }
+      } else {
+        alert(errorMsg);
+      }
     }
   };
 
@@ -145,6 +183,35 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
         <p className="text-muted-foreground">Track your ISTQB certification progress</p>
       </div>
+
+      {/* Resume Quiz Banner */}
+      {inProgressQuiz && (
+        <Card className="mb-6 border-primary bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <PlayCircle className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Resume Your Quiz</h3>
+                  <p className="text-sm text-muted-foreground">
+                    You have an unfinished quiz with {inProgressQuiz.questions.length} questions
+                    {inProgressQuiz.settings?.category && ` in ${inProgressQuiz.settings.category}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Progress: {inProgressQuiz.questions.filter(q => q.userAnswer !== undefined && q.userAnswer !== null).length}/{inProgressQuiz.questions.length} answered
+                  </p>
+                </div>
+              </div>
+              <Button onClick={() => navigate(`/quiz/${inProgressQuiz._id}`)} size="lg">
+                <PlayCircle className="mr-2 h-5 w-5" />
+                Resume Quiz
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>

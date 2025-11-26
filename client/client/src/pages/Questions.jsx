@@ -25,11 +25,24 @@ export default function Questions() {
   const [numQuestions, setNumQuestions] = useState(10);
   const [maxAvailable, setMaxAvailable] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [inProgressQuiz, setInProgressQuiz] = useState(null);
 
   useEffect(() => {
     loadCategories();
     loadQuestions();
+    checkInProgressQuiz();
   }, []);
+
+  const checkInProgressQuiz = async () => {
+    try {
+      const response = await quizAPI.getInProgress();
+      if (response.data.data.quiz) {
+        setInProgressQuiz(response.data.data.quiz);
+      }
+    } catch (error) {
+      console.error('Failed to check for in-progress quiz:', error);
+    }
+  };
 
   const loadCategories = async () => {
     const cats = await getCategories();
@@ -117,6 +130,19 @@ export default function Questions() {
 
   const startQuiz = async () => {
     try {
+      // Check if there's an in-progress quiz
+      if (inProgressQuiz) {
+        const confirmed = window.confirm(
+          'You have an unfinished quiz. Would you like to resume it instead of starting a new one?'
+        );
+        if (confirmed) {
+          navigate(`/quiz/${inProgressQuiz._id}`);
+          return;
+        } else {
+          return; // User chose not to resume, don't start new quiz
+        }
+      }
+
       setStartingQuiz(true);
       const max = Number(maxAvailable) || 0;
       if (max === 0) {
@@ -136,7 +162,19 @@ export default function Questions() {
       navigate(`/quiz/${response.data.data.quiz._id}`);
     } catch (error) {
       console.error('Failed to start quiz:', error);
-      alert(error.response?.data?.message || 'Failed to start quiz');
+      const errorMsg = error.response?.data?.message || 'Failed to start quiz';
+      
+      // If error is about existing quiz, prompt to resume
+      if (errorMsg.includes('unfinished quiz')) {
+        const confirmed = window.confirm(
+          errorMsg + ' Would you like to resume your unfinished quiz?'
+        );
+        if (confirmed && inProgressQuiz) {
+          navigate(`/quiz/${inProgressQuiz._id}`);
+        }
+      } else {
+        alert(errorMsg);
+      }
       setStartingQuiz(false);
     }
   };
@@ -183,8 +221,37 @@ export default function Questions() {
         <p className="text-muted-foreground">Browse and practice ISTQB questions</p>
       </div>
 
+      {/* Resume Quiz Banner */}
+      {inProgressQuiz && (
+        <Card className="mb-6 border-primary bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <PlayCircle className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Resume Your Quiz</h3>
+                  <p className="text-sm text-muted-foreground">
+                    You have an unfinished quiz with {inProgressQuiz.questions.length} questions
+                    {inProgressQuiz.settings?.category && ` in ${inProgressQuiz.settings.category}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Progress: {inProgressQuiz.questions.filter(q => q.userAnswer !== undefined && q.userAnswer !== null).length}/{inProgressQuiz.questions.length} answered
+                  </p>
+                </div>
+              </div>
+              <Button onClick={() => navigate(`/quiz/${inProgressQuiz._id}`)} size="lg">
+                <PlayCircle className="mr-2 h-5 w-5" />
+                Resume Quiz
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Start Quiz Section */}
-      <Card className="mb-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+      <Card className={`mb-6 ${inProgressQuiz ? 'opacity-50 pointer-events-none' : 'bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20'}`}>
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div>
@@ -231,10 +298,22 @@ export default function Questions() {
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Start a quiz with {allCategories || !filters.category ? 'mixed questions' : 'selected category'}
-              </p>
-              <Button onClick={startQuiz} size="lg" disabled={startingQuiz || (maxAvailable === 0)}>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {inProgressQuiz ? (
+                    <span className="text-orange-600 font-medium">
+                      ⚠️ Please complete your current quiz before starting a new one
+                    </span>
+                  ) : (
+                    `Start a quiz with ${allCategories || !filters.category ? 'mixed questions' : 'selected category'}`
+                  )}
+                </p>
+              </div>
+              <Button 
+                onClick={startQuiz} 
+                size="lg" 
+                disabled={startingQuiz || (maxAvailable === 0) || inProgressQuiz}
+              >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 {startingQuiz ? 'Starting...' : 'Start Quiz'}
               </Button>

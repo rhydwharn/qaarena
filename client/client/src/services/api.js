@@ -68,6 +68,7 @@ export const quizAPI = {
   complete: (id) => api.post(`/quiz/${id}/complete`),
   getById: (id) => api.get(`/quiz/${id}`),
   getUserQuizzes: (params) => api.get('/quiz/user/history', { params }),
+  getInProgress: () => api.get('/quiz/in-progress'),
 };
 
 // Progress API

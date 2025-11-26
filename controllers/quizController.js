@@ -9,6 +9,16 @@ exports.startQuiz = async (req, res, next) => {
   try {
     const { mode, category, difficulty, numberOfQuestions = 10, timeLimit, language = 'en' } = req.body;
 
+    // Check if user has an in-progress quiz
+    const existingQuiz = await Quiz.findOne({ 
+      user: req.user.id, 
+      status: 'in-progress' 
+    });
+
+    if (existingQuiz) {
+      return next(new ErrorResponse('You have an unfinished quiz. Please complete or abandon it before starting a new one.', 400));
+    }
+
     // Validate numberOfQuestions
     if (numberOfQuestions < 1 || numberOfQuestions > 100) {
       return next(new ErrorResponse('Number of questions must be between 1 and 100', 400));
@@ -289,6 +299,24 @@ exports.getUserQuizzes = async (req, res, next) => {
         currentPage: page,
         total: count
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getInProgressQuiz = async (req, res, next) => {
+  try {
+    const quiz = await Quiz.findOne({ 
+      user: req.user.id, 
+      status: 'in-progress' 
+    })
+      .populate('questions.question')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: { quiz }
     });
   } catch (error) {
     next(error);

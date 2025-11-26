@@ -85,12 +85,24 @@ export default function Quiz() {
     try {
       setLoading(true);
       const response = await quizAPI.getById(id);
-      setQuiz(response.data.data.quiz);
+      const loadedQuiz = response.data.data.quiz;
+      
+      console.log('Loading quiz:', {
+        id: loadedQuiz._id,
+        status: loadedQuiz.status,
+        totalQuestions: loadedQuiz.questions.length,
+        questionsWithAnswers: loadedQuiz.questions.filter(q => q.userAnswer !== undefined && q.userAnswer !== null).length
+      });
+      
+      setQuiz(loadedQuiz);
       
       // Check if quiz is already completed
-      if (response.data.data.quiz.status === 'completed') {
+      if (loadedQuiz.status === 'completed') {
         setSubmitted(true);
-        calculateResults(response.data.data.quiz);
+        calculateResults(loadedQuiz);
+      } else {
+        // Resume quiz - restore progress
+        restoreQuizProgress(loadedQuiz);
       }
     } catch (error) {
       console.error('Failed to load quiz:', error);
@@ -99,6 +111,44 @@ export default function Quiz() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const restoreQuizProgress = (loadedQuiz) => {
+    // Find the first unanswered question and restore all previous answers
+    let firstUnansweredIndex = loadedQuiz.questions.length; // Default to end if all answered
+    const restoredAnswers = {};
+
+    for (let i = 0; i < loadedQuiz.questions.length; i++) {
+      const q = loadedQuiz.questions[i];
+      const questionId = q.question._id;
+      
+      // Check if question has been answered
+      if (q.userAnswer !== undefined && q.userAnswer !== null && 
+          (Array.isArray(q.userAnswer) ? q.userAnswer.length > 0 : true)) {
+        // Store the previous answer
+        restoredAnswers[questionId] = Array.isArray(q.userAnswer) ? q.userAnswer : [q.userAnswer];
+      } else {
+        // This is the first unanswered question
+        if (firstUnansweredIndex === loadedQuiz.questions.length) {
+          firstUnansweredIndex = i;
+        }
+      }
+    }
+
+    // If all questions are answered, go to last question
+    if (firstUnansweredIndex === loadedQuiz.questions.length && loadedQuiz.questions.length > 0) {
+      firstUnansweredIndex = loadedQuiz.questions.length - 1;
+    }
+
+    console.log('Restoring quiz progress:');
+    console.log('- Total questions:', loadedQuiz.questions.length);
+    console.log('- Answered questions:', Object.keys(restoredAnswers).length);
+    console.log('- Resuming at index:', firstUnansweredIndex);
+    console.log('- Restored answers:', restoredAnswers);
+
+    // Restore state
+    setCurrentQuestionIndex(firstUnansweredIndex);
+    setSelectedAnswers(restoredAnswers);
   };
 
   const handleAnswerSelect = (questionId, optionIndex) => {
