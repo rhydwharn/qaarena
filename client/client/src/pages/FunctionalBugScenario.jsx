@@ -6,6 +6,12 @@ import FintechSimulator from '../components/FunctionalBugs/simulators/FintechSim
 import EcommerceSimulator from '../components/FunctionalBugs/simulators/EcommerceSimulator';
 import OrderingSimulator from '../components/FunctionalBugs/simulators/OrderingSimulator';
 import GradingSimulator from '../components/FunctionalBugs/simulators/GradingSimulator';
+import CountdownTimerSimulator from '../components/FunctionalBugs/simulators/CountdownTimerSimulator';
+import TransactionFeeSimulator from '../components/FunctionalBugs/simulators/TransactionFeeSimulator';
+import LoginBugSimulator from '../components/FunctionalBugs/simulators/LoginBugSimulator';
+import AccountLockoutSimulator from '../components/FunctionalBugs/simulators/AccountLockoutSimulator';
+import WithdrawalSimulator from '../components/FunctionalBugs/simulators/WithdrawalSimulator';
+import RefundSimulator from '../components/FunctionalBugs/simulators/RefundSimulator';
 import BugIdentifier from '../components/FunctionalBugs/BugIdentifier';
 import FeedbackPanel from '../components/FunctionalBugs/FeedbackPanel';
 import GuestLoginModal from '../components/FunctionalBugs/GuestLoginModal';
@@ -207,10 +213,29 @@ const FunctionalBugScenario = () => {
 
     const simulatorProps = {
       bug,
+      bugId: bug.bugId,
       onBugFound: handleBugFound,
       disabled: showIdentifier || feedback
     };
 
+    // Map specific bug IDs to their simulators
+    const bugSimulatorMap = {
+      'FB006': CountdownTimerSimulator,
+      'FB007': TransactionFeeSimulator,
+      'FB009': LoginBugSimulator,
+      'FB010': LoginBugSimulator,
+      'FB011': AccountLockoutSimulator,
+      'FB013': WithdrawalSimulator,
+      'FB015': RefundSimulator
+    };
+
+    // Check if there's a specific simulator for this bug
+    if (bugSimulatorMap[bug.bugId]) {
+      const SpecificSimulator = bugSimulatorMap[bug.bugId];
+      return <SpecificSimulator {...simulatorProps} />;
+    }
+
+    // Fall back to domain-based simulators
     switch (bug.domain) {
       case 'fintech':
         return <FintechSimulator {...simulatorProps} />;
@@ -220,6 +245,8 @@ const FunctionalBugScenario = () => {
         return <OrderingSimulator {...simulatorProps} />;
       case 'grading':
         return <GradingSimulator {...simulatorProps} />;
+      case 'authentication':
+        return <LoginBugSimulator {...simulatorProps} />;
       default:
         return <div>Simulator not available for this domain</div>;
     }

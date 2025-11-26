@@ -225,6 +225,435 @@ const functionalBugs = [
     ],
     isActive: true
   },
+  {
+    bugId: 'FB006',
+    domain: 'fintech',
+    title: 'Countdown Timer Goes Negative on Payment Page',
+    difficulty: 'beginner',
+    severity: 'medium',
+    category: 'UI Logic Error',
+    scenario: {
+      description: 'Payment session has 5-minute timeout with countdown timer',
+      steps: [
+        'Initiate payment for $500',
+        'Wait for countdown to reach 00:00',
+        'Observe timer behavior after expiry',
+        'Try to complete payment'
+      ],
+      initialState: { amount: 500, timeRemaining: 300 }
+    },
+    expected: 'Timer should stop at 00:00 and disable payment, showing session expired message',
+    actual: 'Timer continues to negative values (-00:01, -00:02...) and payment button remains enabled',
+    bugType: 'Timer Logic Error',
+    rootCause: 'Missing condition to stop timer at zero and no validation on payment submission',
+    fix: 'Add timer stop condition at zero, disable payment controls, and validate session on server',
+    preventionTips: [
+      'Always validate time-based sessions on server-side',
+      'Stop timers at zero, never allow negative time',
+      'Disable UI controls when session expires',
+      'Show clear expiration messages'
+    ],
+    testingTips: [
+      'Wait for full timer expiration',
+      'Try to submit after expiry',
+      'Check if timer stops at zero',
+      'Verify server-side session validation'
+    ],
+    points: 75,
+    hints: [
+      'Let the countdown timer run out completely',
+      'Watch what happens after it reaches zero',
+      'Try clicking the payment button after expiry'
+    ],
+    isActive: true
+  },
+  {
+    bugId: 'FB007',
+    domain: 'fintech',
+    title: 'Transaction Fee Calculated on Gross Instead of Net Amount',
+    difficulty: 'intermediate',
+    severity: 'high',
+    category: 'Calculation Error',
+    scenario: {
+      description: 'User transfers $1000 with 2% fee, then another $500',
+      steps: [
+        'Transfer $1000 (should deduct $20 fee)',
+        'Check remaining balance',
+        'Transfer $500 from remaining balance',
+        'Check final balance'
+      ],
+      initialState: { balance: 2000, feePercentage: 2 }
+    },
+    expected: 'First transfer: $1020 total ($1000 + $20 fee). Second transfer: $510 total ($500 + $10 fee). Remaining: $470',
+    actual: 'System calculates second fee on original balance, charging $20 again instead of $10',
+    bugType: 'Calculation Logic Error',
+    rootCause: 'Fee calculation references original balance instead of current balance',
+    fix: 'Calculate fees based on current transaction amount, not account balance',
+    preventionTips: [
+      'Always calculate fees on transaction amount',
+      'Use clear variable naming (transactionAmount vs accountBalance)',
+      'Add unit tests for sequential transactions',
+      'Document fee calculation logic clearly'
+    ],
+    testingTips: [
+      'Perform multiple transactions in sequence',
+      'Verify fee calculation for each transaction',
+      'Test with different amounts',
+      'Check final balance matches expected'
+    ],
+    points: 100,
+    hints: [
+      'Make multiple transfers and track the fees',
+      'Calculate what each fee should be manually',
+      'Check if fees are consistent with transfer amounts'
+    ],
+    isActive: true
+  },
+  {
+    bugId: 'FB008',
+    domain: 'fintech',
+    title: 'Interest Calculation Compounds Daily Instead of Monthly',
+    difficulty: 'advanced',
+    severity: 'critical',
+    category: 'Business Logic Error',
+    scenario: {
+      description: 'Savings account with 12% annual interest, compounded monthly',
+      steps: [
+        'Deposit $10,000 into savings account',
+        'Wait 30 days',
+        'Check interest earned',
+        'Compare with expected monthly compound interest'
+      ],
+      initialState: { principal: 10000, annualRate: 12, compoundFrequency: 'monthly' }
+    },
+    expected: 'Monthly compound: $100 interest (1% per month). Total: $10,100',
+    actual: 'Daily compound: $101.22 interest (compounding 30 times at daily rate). Total: $10,101.22',
+    bugType: 'Compound Frequency Error',
+    rootCause: 'Interest calculation loop runs daily instead of monthly, using wrong compound frequency',
+    fix: 'Implement proper compound frequency logic based on account terms',
+    preventionTips: [
+      'Clearly define compound frequency in requirements',
+      'Use date-based triggers for interest calculation',
+      'Add validation for compound frequency settings',
+      'Test with different time periods'
+    ],
+    testingTips: [
+      'Calculate expected interest manually',
+      'Test over multiple compound periods',
+      'Verify compound frequency matches terms',
+      'Compare daily vs monthly calculations'
+    ],
+    points: 150,
+    hints: [
+      'Check how often interest is being added',
+      'Calculate what 12% annual interest should be monthly',
+      'Look at the interest amount - is it slightly higher than expected?'
+    ],
+    isActive: true
+  },
+  
+  // LOGIN/AUTHENTICATION BUGS
+  {
+    bugId: 'FB009',
+    domain: 'authentication',
+    title: 'Login Error Reveals User Password',
+    difficulty: 'beginner',
+    severity: 'critical',
+    category: 'Security Vulnerability',
+    scenario: {
+      description: 'User attempts to login with existing username but wrong password',
+      steps: [
+        'Go to login page',
+        'Enter username: "john@example.com"',
+        'Enter wrong password: "wrongpass123"',
+        'Click Login',
+        'Read error message'
+      ],
+      initialState: { username: 'john@example.com', correctPassword: 'SecurePass456!' }
+    },
+    expected: 'Generic error: "Invalid username or password"',
+    actual: 'Error shows: "User john@example.com exists but password is incorrect. The correct password is: SecurePass456!"',
+    bugType: 'Information Disclosure',
+    rootCause: 'Debug code left in production that displays actual password in error messages',
+    fix: 'Remove password from error messages, use generic authentication failure messages',
+    preventionTips: [
+      'Never include sensitive data in error messages',
+      'Use generic authentication error messages',
+      'Remove debug code before production',
+      'Implement security code reviews',
+      'Use security linters and scanners'
+    ],
+    testingTips: [
+      'Try logging in with wrong credentials',
+      'Check all error message variations',
+      'Verify no sensitive data is exposed',
+      'Test with security scanning tools'
+    ],
+    points: 100,
+    hints: [
+      'Try logging in with a wrong password',
+      'Read the error message carefully',
+      'Does the error reveal any sensitive information?'
+    ],
+    isActive: true
+  },
+  {
+    bugId: 'FB010',
+    domain: 'authentication',
+    title: 'Case-Sensitive Password Validation Inconsistency',
+    difficulty: 'intermediate',
+    severity: 'high',
+    category: 'Validation Error',
+    scenario: {
+      description: 'User sets password "MyPassword123" but can login with "mypassword123"',
+      steps: [
+        'Register with password: "MyPassword123"',
+        'Logout',
+        'Login with password: "mypassword123" (all lowercase)',
+        'Observe login success'
+      ],
+      initialState: { username: 'user@test.com', setPassword: 'MyPassword123' }
+    },
+    expected: 'Login should fail - passwords are case-sensitive',
+    actual: 'Login succeeds because password comparison converts both to lowercase',
+    bugType: 'Validation Logic Error',
+    rootCause: 'Password comparison uses .toLowerCase() on both stored and input passwords',
+    fix: 'Remove case conversion from password comparison, use direct hash comparison',
+    preventionTips: [
+      'Never modify passwords before hashing/comparing',
+      'Use proper password hashing libraries (bcrypt, argon2)',
+      'Test password validation with various cases',
+      'Document password requirements clearly'
+    ],
+    testingTips: [
+      'Set password with mixed case',
+      'Try logging in with different case variations',
+      'Verify case sensitivity is enforced',
+      'Test special characters and numbers'
+    ],
+    points: 100,
+    hints: [
+      'Try changing the case of letters in your password',
+      'Does "PASSWORD" work the same as "password"?',
+      'Check if case matters during login'
+    ],
+    isActive: true
+  },
+  {
+    bugId: 'FB011',
+    domain: 'authentication',
+    title: 'Account Lockout Counter Never Resets',
+    difficulty: 'intermediate',
+    severity: 'high',
+    category: 'State Management Error',
+    scenario: {
+      description: 'Account locks after 3 failed attempts, should reset after 15 minutes',
+      steps: [
+        'Attempt login with wrong password 3 times',
+        'Account gets locked',
+        'Wait 15 minutes',
+        'Try to login with correct password',
+        'Observe result'
+      ],
+      initialState: { maxAttempts: 3, lockoutDuration: 900, failedAttempts: 0 }
+    },
+    expected: 'After 15 minutes, counter resets and user can login',
+    actual: 'Account remains locked permanently, counter never resets even after waiting',
+    bugType: 'State Reset Error',
+    rootCause: 'Lockout timestamp is set but never checked; reset logic is missing',
+    fix: 'Implement time-based reset: check if current time > lockout time + duration, then reset counter',
+    preventionTips: [
+      'Always implement timeout reset logic',
+      'Store lockout timestamp, not just boolean flag',
+      'Test time-based features thoroughly',
+      'Add automated tests for time-dependent logic'
+    ],
+    testingTips: [
+      'Trigger account lockout',
+      'Wait for reset period',
+      'Verify counter resets automatically',
+      'Test edge cases (exactly at reset time)'
+    ],
+    points: 100,
+    hints: [
+      'Get your account locked by failing login attempts',
+      'Wait for the specified lockout duration',
+      'Try logging in again - does it work?'
+    ],
+    isActive: true
+  },
+  {
+    bugId: 'FB012',
+    domain: 'authentication',
+    title: 'Session Token Doesn\'t Expire After Logout',
+    difficulty: 'advanced',
+    severity: 'critical',
+    category: 'Session Management',
+    scenario: {
+      description: 'User logs out but old session token remains valid',
+      steps: [
+        'Login and save the session token',
+        'Perform some actions',
+        'Click Logout',
+        'Try using the old token in API requests',
+        'Observe if requests succeed'
+      ],
+      initialState: { userId: 123, sessionToken: 'abc123xyz' }
+    },
+    expected: 'After logout, token should be invalidated and API requests should fail with 401',
+    actual: 'Token remains valid, API requests succeed even after logout',
+    bugType: 'Session Invalidation Failure',
+    rootCause: 'Logout only clears client-side token but doesn\'t invalidate it on server',
+    fix: 'Implement server-side token blacklist or database flag to invalidate tokens on logout',
+    preventionTips: [
+      'Always invalidate sessions on server-side',
+      'Implement token blacklist for JWTs',
+      'Use short-lived tokens with refresh mechanism',
+      'Clear all session data on logout'
+    ],
+    testingTips: [
+      'Capture session token before logout',
+      'Logout and try reusing the token',
+      'Verify 401 Unauthorized response',
+      'Test with API testing tools (Postman)'
+    ],
+    points: 150,
+    hints: [
+      'Save your authentication token before logging out',
+      'After logout, try making an API request with the old token',
+      'Should the old token still work?'
+    ],
+    isActive: true
+  },
+  {
+    bugId: 'FB013',
+    domain: 'fintech',
+    title: 'Withdrawal Processes Twice on Slow Network',
+    difficulty: 'advanced',
+    severity: 'critical',
+    category: 'Race Condition',
+    scenario: {
+      description: 'User withdraws $500 on slow network, clicks button twice',
+      steps: [
+        'Navigate to withdrawal page',
+        'Enter amount: $500',
+        'Click Withdraw button',
+        'Click Withdraw button again quickly (double-click)',
+        'Check account balance and transaction history'
+      ],
+      initialState: { balance: 1000, pendingTransactions: [] }
+    },
+    expected: 'Only one withdrawal of $500 should process. Balance: $500',
+    actual: 'Both clicks create separate transactions. Two withdrawals of $500 process. Balance: $0',
+    bugType: 'Race Condition / Idempotency Issue',
+    rootCause: 'No request deduplication or button disable during processing',
+    fix: 'Implement idempotency keys, disable button during processing, use transaction locks',
+    preventionTips: [
+      'Disable submit buttons during processing',
+      'Implement idempotency keys for transactions',
+      'Use database transaction locks',
+      'Add request deduplication logic'
+    ],
+    testingTips: [
+      'Test with slow network simulation',
+      'Try double-clicking submit buttons',
+      'Verify only one transaction processes',
+      'Check for duplicate transaction IDs'
+    ],
+    points: 150,
+    hints: [
+      'Try clicking the withdrawal button multiple times quickly',
+      'Check how many transactions were created',
+      'Look at your final balance - is it correct?'
+    ],
+    isActive: true
+  },
+  {
+    bugId: 'FB014',
+    domain: 'authentication',
+    title: 'Password Reset Token Works Multiple Times',
+    difficulty: 'intermediate',
+    severity: 'critical',
+    category: 'Security Vulnerability',
+    scenario: {
+      description: 'User requests password reset, receives token via email',
+      steps: [
+        'Request password reset',
+        'Receive reset token via email',
+        'Use token to reset password to "NewPass123"',
+        'Use the same token again to reset to "HackedPass456"',
+        'Try logging in with second password'
+      ],
+      initialState: { email: 'user@test.com', resetToken: 'reset_abc123' }
+    },
+    expected: 'Token should be single-use only. Second reset attempt should fail.',
+    actual: 'Token can be reused multiple times. Attacker can reset password even after user already reset it.',
+    bugType: 'Token Reuse Vulnerability',
+    rootCause: 'Reset token is not invalidated after first use',
+    fix: 'Invalidate or delete reset token immediately after successful password reset',
+    preventionTips: [
+      'Make all security tokens single-use',
+      'Set short expiration times (15-30 minutes)',
+      'Invalidate token after successful use',
+      'Log all password reset attempts'
+    ],
+    testingTips: [
+      'Request password reset',
+      'Use token to reset password',
+      'Try using same token again',
+      'Verify second attempt fails'
+    ],
+    points: 125,
+    hints: [
+      'Complete a password reset successfully',
+      'Try using the same reset link/token again',
+      'Should it work a second time?'
+    ],
+    isActive: true
+  },
+  {
+    bugId: 'FB015',
+    domain: 'fintech',
+    title: 'Refund Amount Exceeds Original Payment',
+    difficulty: 'intermediate',
+    severity: 'critical',
+    category: 'Validation Error',
+    scenario: {
+      description: 'Customer paid $100, merchant tries to refund $150',
+      steps: [
+        'Process payment of $100',
+        'Go to refund page',
+        'Enter refund amount: $150',
+        'Submit refund',
+        'Check customer balance and merchant account'
+      ],
+      initialState: { originalPayment: 100, customerBalance: 500, merchantBalance: 1000 }
+    },
+    expected: 'System should reject refund with error: "Refund cannot exceed original payment amount"',
+    actual: 'System processes $150 refund. Customer receives $150, merchant loses $150.',
+    bugType: 'Business Logic Validation Missing',
+    rootCause: 'No validation to check refund amount against original transaction amount',
+    fix: 'Add validation: refundAmount <= originalTransactionAmount before processing',
+    preventionTips: [
+      'Validate refund amounts against original transactions',
+      'Store original transaction amounts immutably',
+      'Implement business rule validation layer',
+      'Add audit logs for all refunds'
+    ],
+    testingTips: [
+      'Try refunding more than original amount',
+      'Try refunding exactly the original amount',
+      'Try partial refunds multiple times',
+      'Verify total refunds don\'t exceed original'
+    ],
+    points: 100,
+    hints: [
+      'Try to refund more money than the original transaction',
+      'Should the system allow this?',
+      'Check the final balances of both parties'
+    ],
+    isActive: true
+  },
   
   // E-COMMERCE CART BUGS (5 samples - add more as needed)
   {
@@ -516,11 +945,12 @@ const seedFunctionalBugs = async () => {
     
     console.log(`\n🎉 Successfully seeded ${functionalBugs.length} functional bugs!`);
     console.log('\n📊 Bug Distribution:');
-    console.log(`   Fintech: 5 bugs`);
+    console.log(`   Fintech: 10 bugs`);
+    console.log(`   Authentication: 6 bugs`);
     console.log(`   E-commerce: 2 bugs`);
     console.log(`   Ordering: 2 bugs`);
     console.log(`   Grading: 2 bugs`);
-    console.log(`\n💡 Note: This is a sample set. Add remaining 49 bugs using the catalog.`);
+    console.log(`\n💡 Total: ${functionalBugs.length} bugs ready for testing!`);
     
     process.exit(0);
   } catch (error) {

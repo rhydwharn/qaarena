@@ -10,7 +10,7 @@ const functionalBugSchema = new mongoose.Schema({
   domain: {
     type: String,
     required: true,
-    enum: ['fintech', 'ecommerce', 'ordering', 'grading']
+    enum: ['fintech', 'ecommerce', 'ordering', 'grading', 'authentication']
   },
   title: {
     type: String,
