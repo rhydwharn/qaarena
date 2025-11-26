@@ -13,8 +13,11 @@ import Progress from './pages/Progress';
 import Leaderboard from './pages/Leaderboard';
 import Achievements from './pages/Achievements';
 import Events from './pages/Events';
+import BugHuntingHub from './pages/BugHuntingHub';
 import BugHunting from './pages/BugHunting';
 import BugScenario from './pages/BugScenario';
+import FunctionalBugHunting from './pages/FunctionalBugHunting';
+import FunctionalBugScenario from './pages/FunctionalBugScenario';
 
 // Lazy load Admin page
 const Admin = lazy(() => import('./pages/Admin'));
@@ -46,8 +49,11 @@ function App() {
           
           {/* Public Bug Hunting Routes with Navbar */}
           <Route element={<Layout />}>
+            <Route path="/bug-hunting-hub" element={<BugHuntingHub />} />
             <Route path="/bug-hunting" element={<BugHunting />} />
             <Route path="/bug-hunting/scenario/:scenarioId" element={<BugScenario />} />
+            <Route path="/functional-bug-hunting" element={<FunctionalBugHunting />} />
+            <Route path="/functional-bug-hunting/:bugId" element={<FunctionalBugScenario />} />
           </Route>
           
           {/* Protected Routes */}

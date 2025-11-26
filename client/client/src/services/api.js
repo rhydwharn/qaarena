@@ -26,9 +26,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Only redirect to login if we're on a protected route
+      const publicRoutes = ['/', '/login', '/register', '/bug-hunting', '/functional-bug-hunting', '/events'];
+      const currentPath = window.location.pathname;
+      const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route));
+      
+      if (!isPublicRoute) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -97,6 +104,21 @@ export const adminAPI = {
   createAchievement: (data) => api.post('/admin/achievements', data),
   updateAchievement: (id, data) => api.put(`/admin/achievements/${id}`, data),
   deleteAchievement: (id) => api.delete(`/admin/achievements/${id}`),
+};
+
+// Functional Bugs API
+export const functionalBugsAPI = {
+  getAll: (params) => api.get('/functional-bugs', { params }),
+  getById: (bugId) => api.get(`/functional-bugs/${bugId}`),
+  start: (bugId) => api.post(`/functional-bugs/${bugId}/start`),
+  getHint: (bugId) => api.post(`/functional-bugs/${bugId}/hint`),
+  submit: (bugId, data) => api.post(`/functional-bugs/${bugId}/submit`, data),
+  getUserProgress: (params) => api.get('/functional-bugs/user/progress', { params }),
+  getLeaderboard: (params) => api.get('/functional-bugs/leaderboard', { params }),
+  getStats: (bugId) => api.get(`/functional-bugs/${bugId}/stats`),
+  create: (data) => api.post('/functional-bugs', data),
+  update: (bugId, data) => api.put(`/functional-bugs/${bugId}`, data),
+  delete: (bugId) => api.delete(`/functional-bugs/${bugId}`),
 };
 
 export default api;

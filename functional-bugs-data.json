@@ -1,0 +1,204 @@
+{
+  "functionalBugs": [
+    {
+      "id": "FB001",
+      "domain": "fintech",
+      "title": "Incorrect Balance Calculation After Multiple Transactions",
+      "difficulty": "intermediate",
+      "severity": "critical",
+      "category": "Calculation Error",
+      "scenario": {
+        "description": "User makes 3 deposits of $100 each",
+        "steps": [
+          "Navigate to deposit page",
+          "Enter $100 and submit",
+          "Repeat deposit two more times",
+          "Check account balance"
+        ]
+      },
+      "expected": "Balance should show $300",
+      "actual": "Balance shows $290 due to rounding error in transaction processing",
+      "bugType": "Calculation Error",
+      "rootCause": "Floating point arithmetic error - each transaction loses $0.03 due to improper rounding",
+      "fix": "Use decimal data type for currency calculations instead of float",
+      "preventionTips": [
+        "Always use decimal/money types for financial calculations",
+        "Never use floating-point for currency",
+        "Implement unit tests for transaction calculations",
+        "Use libraries like Decimal.js or Big.js for precision"
+      ],
+      "testingTips": [
+        "Test with multiple sequential transactions",
+        "Verify balance after each operation",
+        "Test with various amounts including decimals",
+        "Check for cumulative rounding errors"
+      ],
+      "points": 100,
+      "hints": [
+        "Check the balance after each deposit",
+        "Calculate what the total should be manually",
+        "Look for small discrepancies in the final amount"
+      ]
+    },
+    {
+      "id": "FB002",
+      "domain": "fintech",
+      "title": "Transfer Limit Not Enforced",
+      "difficulty": "beginner",
+      "severity": "critical",
+      "category": "Business Logic",
+      "scenario": {
+        "description": "Daily transfer limit is set to $5,000",
+        "steps": [
+          "Go to transfer money page",
+          "Enter amount: $6,000",
+          "Select recipient",
+          "Click 'Transfer Now'"
+        ]
+      },
+      "expected": "System should block the transfer and show error message",
+      "actual": "System allows the transfer and only shows a warning after completion",
+      "bugType": "Business Rule Violation",
+      "rootCause": "Validation check happens after transaction processing instead of before",
+      "fix": "Move limit validation to pre-transaction validation layer",
+      "preventionTips": [
+        "Validate business rules before processing",
+        "Implement server-side validation",
+        "Use transaction guards/middleware",
+        "Test boundary conditions"
+      ],
+      "testingTips": [
+        "Test exactly at the limit ($5,000)",
+        "Test just above the limit ($5,001)",
+        "Test significantly above ($10,000)",
+        "Verify validation happens before processing"
+      ],
+      "points": 75,
+      "hints": [
+        "Try transferring more than the daily limit",
+        "Check when the validation message appears",
+        "See if the money actually transferred"
+      ]
+    },
+    {
+      "id": "FB003",
+      "domain": "fintech",
+      "title": "Duplicate Transaction on Network Timeout",
+      "difficulty": "advanced",
+      "severity": "critical",
+      "category": "Concurrency Issue",
+      "scenario": {
+        "description": "User clicks 'Send Money' and network times out",
+        "steps": [
+          "Initiate a money transfer",
+          "Network timeout occurs",
+          "User clicks 'Retry'",
+          "Check transaction history"
+        ]
+      },
+      "expected": "Transaction should fail or process only once",
+      "actual": "Money is debited twice when user retries",
+      "bugType": "Idempotency Failure",
+      "rootCause": "No transaction ID or idempotency key to prevent duplicate processing",
+      "fix": "Implement idempotency keys and transaction deduplication",
+      "preventionTips": [
+        "Use unique transaction IDs",
+        "Implement idempotency tokens",
+        "Check for duplicate transactions before processing",
+        "Use database constraints to prevent duplicates"
+      ],
+      "testingTips": [
+        "Simulate network timeouts",
+        "Test retry mechanisms",
+        "Verify transaction uniqueness",
+        "Check for duplicate entries in database"
+      ],
+      "points": 150,
+      "hints": [
+        "What happens when you retry a failed transaction?",
+        "Check your transaction history carefully",
+        "Look for duplicate entries with same amount and time"
+      ]
+    },
+    {
+      "id": "FB004",
+      "domain": "fintech",
+      "title": "Negative Balance Allowed in Savings Account",
+      "difficulty": "beginner",
+      "severity": "critical",
+      "category": "Validation Error",
+      "scenario": {
+        "description": "User has $50 in savings, attempts to withdraw $75",
+        "steps": [
+          "Check current balance: $50",
+          "Go to withdrawal page",
+          "Enter amount: $75",
+          "Submit withdrawal"
+        ]
+      },
+      "expected": "Transaction should be rejected with insufficient funds error",
+      "actual": "Transaction succeeds, balance shows -$25",
+      "bugType": "Insufficient Validation",
+      "rootCause": "Missing balance validation before withdrawal processing",
+      "fix": "Add balance check: if (withdrawal > balance) reject transaction",
+      "preventionTips": [
+        "Always validate account balance before debits",
+        "Implement account type rules (savings vs checking)",
+        "Use database constraints for balance limits",
+        "Add integration tests for overdraft scenarios"
+      ],
+      "testingTips": [
+        "Test withdrawal equal to balance",
+        "Test withdrawal exceeding balance",
+        "Test withdrawal with exactly $0.01 more than balance",
+        "Verify different account types have correct rules"
+      ],
+      "points": 75,
+      "hints": [
+        "Try withdrawing more than you have",
+        "Check if the system allows negative balances",
+        "Should a savings account go negative?"
+      ]
+    },
+    {
+      "id": "FB005",
+      "domain": "fintech",
+      "title": "Currency Conversion Uses Outdated Rate",
+      "difficulty": "intermediate",
+      "severity": "high",
+      "category": "Data Staleness",
+      "scenario": {
+        "description": "User converts $1000 USD to EUR",
+        "steps": [
+          "Go to currency exchange",
+          "Select USD to EUR",
+          "Enter amount: $1000",
+          "Check conversion rate and result"
+        ]
+      },
+      "expected": "Should use current exchange rate (1.10)",
+      "actual": "Uses rate from 24 hours ago (1.08), resulting in €1080 instead of €1100",
+      "bugType": "Stale Data",
+      "rootCause": "Exchange rate cache not refreshed, or using wrong timestamp",
+      "fix": "Implement real-time rate fetching or frequent cache updates with timestamps",
+      "preventionTips": [
+        "Display rate timestamp to users",
+        "Implement cache expiration policies",
+        "Use real-time exchange rate APIs",
+        "Add monitoring for stale data"
+      ],
+      "testingTips": [
+        "Compare with current market rates",
+        "Check rate update frequency",
+        "Verify rate timestamp display",
+        "Test during market volatility"
+      ],
+      "points": 100,
+      "hints": [
+        "Check what exchange rate is being used",
+        "Compare with current market rates online",
+        "Look for a timestamp on the rate"
+      ]
+    }
+  ]
+}

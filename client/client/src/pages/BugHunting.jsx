@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { 
   Bug, Trophy, Target, BookOpen, ArrowRight, CheckCircle2, 
-  AlertCircle, Star, Award, TrendingUp 
+  AlertCircle, Star, Award, TrendingUp, ArrowLeft 
 } from 'lucide-react';
 import { bugHuntingScenarios, getTotalBugsCount } from '../data/bugHuntingData';
 
@@ -53,6 +53,13 @@ export default function BugHunting() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <button
+            onClick={() => navigate('/bug-hunting-hub')}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Back to Bug Hunting Hub
+          </button>
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="h-10 w-10 sm:h-12 sm:w-12 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
               <Bug className="h-6 w-6 sm:h-7 sm:w-7 text-red-600" />

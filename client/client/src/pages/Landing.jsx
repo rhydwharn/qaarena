@@ -39,10 +39,10 @@ export default function Landing() {
     },
     {
       icon: <Bug className="h-8 w-8" />,
-      title: 'Interactive Bug Hunting Application',
-      description: 'Practice finding bugs in real-world scenarios with our interactive bug hunting sessions.',
+      title: 'Bug Hunting Arena',
+      description: 'Practice finding bugs in real-world scenarios with interactive and functional bug hunting.',
       color: 'bg-red-500',
-      link: '/bug-hunting'
+      link: '/bug-hunting-hub'
     },
     {
       icon: <Radio className="h-8 w-8" />,

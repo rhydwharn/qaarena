@@ -26,20 +26,50 @@ exports.startQuiz = async (req, res, next) => {
 
     const limit = Math.min(numberOfQuestions, totalAvailable);
 
-    const questions = await Question.aggregate([
+    // Use $sample with a larger size to account for potential duplicates
+    const sampleSize = Math.min(limit * 2, totalAvailable);
+    const sampledQuestions = await Question.aggregate([
       { $match: query },
-      { $sample: { size: limit } }
+      { $sample: { size: sampleSize } }
     ]);
 
-    if (questions.length === 0) {
+    // Remove duplicates by tracking unique question IDs
+    const uniqueQuestions = [];
+    const seenIds = new Set();
+    
+    for (const question of sampledQuestions) {
+      const questionId = question._id.toString();
+      if (!seenIds.has(questionId)) {
+        seenIds.add(questionId);
+        uniqueQuestions.push(question);
+        if (uniqueQuestions.length === limit) {
+          break;
+        }
+      }
+    }
+
+    // If we still don't have enough unique questions, fetch more
+    if (uniqueQuestions.length < limit) {
+      const additionalNeeded = limit - uniqueQuestions.length;
+      const excludeIds = uniqueQuestions.map(q => q._id);
+      
+      const additionalQuestions = await Question.find({
+        ...query,
+        _id: { $nin: excludeIds }
+      }).limit(additionalNeeded);
+      
+      uniqueQuestions.push(...additionalQuestions);
+    }
+
+    if (uniqueQuestions.length === 0) {
       return next(new ErrorResponse('Unable to generate quiz. Please try again.', 500));
     }
 
     const quiz = await Quiz.create({
       user: req.user.id,
       mode,
-      questions: questions.map(q => ({ question: q._id })),
-      settings: { language, category, difficulty, numberOfQuestions: limit, timeLimit }
+      questions: uniqueQuestions.map(q => ({ question: q._id })),
+      settings: { language, category, difficulty, numberOfQuestions: uniqueQuestions.length, timeLimit }
     });
 
     const populatedQuiz = await Quiz.findById(quiz._id).populate('questions.question');

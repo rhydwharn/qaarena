@@ -68,8 +68,18 @@ exports.login = async (req, res, next) => {
 
     const user = await User.findOne({ email }).select('+password');
 
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ status: 'error', message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ 
+        status: 'error', 
+        message: 'No account found with this email address. Please check your email or sign up.' 
+      });
+    }
+
+    if (!(await user.comparePassword(password))) {
+      return res.status(401).json({ 
+        status: 'error', 
+        message: 'Incorrect password. Please try again.' 
+      });
     }
 
     user.lastLogin = Date.now();
