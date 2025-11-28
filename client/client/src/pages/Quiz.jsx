@@ -259,7 +259,7 @@ export default function Quiz() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" data-cy="quiz-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading quiz...</p>
@@ -270,11 +270,11 @@ export default function Quiz() {
 
   if (!quiz && id) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6" data-cy="quiz-not-found">
         <Card>
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">Quiz not found</p>
-            <Button onClick={() => navigate('/dashboard')} className="mt-4">
+            <Button onClick={() => navigate('/dashboard')} className="mt-4" data-cy="quiz-not-found-dashboard-button">
               Go to Dashboard
             </Button>
           </CardContent>
@@ -286,7 +286,7 @@ export default function Quiz() {
   // Results View
   if (submitted && results) {
     return (
-      <div className="container mx-auto p-6 max-w-4xl">
+      <div className="container mx-auto p-6 max-w-4xl" data-cy="quiz-results-page">
         <Card className="mb-6">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4">
@@ -296,24 +296,24 @@ export default function Quiz() {
                 <Clock className="h-16 w-16 text-orange-500 mx-auto" />
               )}
             </div>
-            <CardTitle className="text-3xl">Quiz Completed!</CardTitle>
+            <CardTitle className="text-3xl" data-cy="quiz-results-title">Quiz Completed!</CardTitle>
             <CardDescription>Here are your results</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3 mb-6">
-              <Card>
+              <Card data-cy="quiz-results-score-card">
                 <CardContent className="pt-6 text-center">
-                  <p className="text-3xl font-bold text-primary">{results.score}%</p>
+                  <p className="text-3xl font-bold text-primary" data-cy="quiz-results-score">{results.score}%</p>
                   <p className="text-sm text-muted-foreground">Score</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card data-cy="quiz-results-correct-card">
                 <CardContent className="pt-6 text-center">
-                  <p className="text-3xl font-bold text-green-600">{results.correctAnswers}</p>
+                  <p className="text-3xl font-bold text-green-600" data-cy="quiz-results-correct">{results.correctAnswers}</p>
                   <p className="text-sm text-muted-foreground">Correct</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card data-cy="quiz-results-incorrect-card">
                 <CardContent className="pt-6 text-center">
                   <p className="text-3xl font-bold text-red-600">{results.incorrectAnswers}</p>
                   <p className="text-sm text-muted-foreground">Incorrect</p>
@@ -408,10 +408,10 @@ export default function Quiz() {
 
   // Quiz Taking View
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-4xl" data-cy="quiz-page">
       {/* Start New Quiz Selector (only when no active quiz is loaded) */}
       {!quiz && (
-        <Card className="mb-6">
+        <Card className="mb-6" data-cy="start-new-quiz-card">
           <CardHeader>
             <CardTitle>Start a New Quiz</CardTitle>
             <CardDescription>Select category (or all) and number of questions</CardDescription>
@@ -426,6 +426,7 @@ export default function Quiz() {
                   className="mt-0.5 scale-110"
                   checked={allCats}
                   onChange={(e) => { setAllCats(e.target.checked); if (e.target.checked) setSelCategory(''); }}
+                  data-cy="quiz-all-categories-checkbox"
                 />
                 <div>
                   <p className="font-medium">All categories</p>
@@ -444,6 +445,7 @@ export default function Quiz() {
                   value={selCategory}
                   onChange={(e) => setSelCategory(e.target.value)}
                   disabled={allCats}
+                  data-cy="quiz-selector-category"
                 >
                   <option value="" disabled>Select a category</option>
                   <option value="fundamentals">Fundamentals of Testing</option>
@@ -468,10 +470,11 @@ export default function Quiz() {
                   max={Math.max(1, maxAvail || 1)}
                   value={selCount}
                   onChange={(e) => setSelCount(Number(e.target.value))}
+                  data-cy="quiz-selector-count-input"
                 />
               </div>
               <div className="md:col-span-1 flex md:justify-end">
-                <Button className="mt-6 md:mt-0" onClick={startNewQuiz} disabled={(!allCats && !selCategory) || (maxAvail === 0)}>
+                <Button className="mt-6 md:mt-0" onClick={startNewQuiz} disabled={(!allCats && !selCategory) || (maxAvail === 0)} data-cy="quiz-selector-start-button">
                   Start New Quiz
                 </Button>
               </div>
@@ -484,24 +487,24 @@ export default function Quiz() {
         <>
 
       {/* Progress Header */}
-      <Card className="mb-6">
+      <Card className="mb-6" data-cy="quiz-progress-card">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium" data-cy="quiz-progress-text">
               Question {currentQuestionIndex + 1} of {quiz.questions.length}
             </span>
             <span className="text-sm text-muted-foreground">
               {quiz.category || 'Mixed'} • {quiz.difficulty || 'All Levels'}
             </span>
           </div>
-          <Progress value={((currentQuestionIndex + 1) / (quiz?.questions?.length || 1)) * 100} className="h-2" />
+          <Progress value={((currentQuestionIndex + 1) / (quiz?.questions?.length || 1)) * 100} className="h-2" data-cy="quiz-progress-bar" />
         </CardContent>
       </Card>
 
       {/* Question Card */}
-      <Card>
+      <Card data-cy="quiz-question-card">
         <CardHeader>
-          <CardTitle className="text-xl">
+          <CardTitle className="text-xl" data-cy="quiz-question-text">
             {quiz.questions[currentQuestionIndex].question.questionText?.en || quiz.questions[currentQuestionIndex].question.questionText}
           </CardTitle>
           <CardDescription>
@@ -524,6 +527,7 @@ export default function Quiz() {
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:border-primary/50 hover:bg-accent'
                   }`}
+                  data-cy={`quiz-option-${idx}`}
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -551,6 +555,7 @@ export default function Quiz() {
               onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
               disabled={currentQuestionIndex === 0}
               className="flex-1"
+              data-cy="quiz-previous-button"
             >
               Previous
             </Button>
@@ -558,6 +563,7 @@ export default function Quiz() {
               onClick={handleSubmitAnswer}
               disabled={(selectedAnswers[quiz.questions[currentQuestionIndex].question._id] || []).length === 0 || submitting}
               className="flex-1"
+              data-cy="quiz-submit-answer-button"
             >
               {submitting ? (
                 'Submitting...'

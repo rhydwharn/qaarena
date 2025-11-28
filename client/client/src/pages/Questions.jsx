@@ -187,7 +187,7 @@ export default function Questions() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" data-cy="questions-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading questions...</p>
@@ -198,13 +198,13 @@ export default function Questions() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-6 max-w-7xl">
+      <div className="container mx-auto p-6 max-w-7xl" data-cy="questions-error">
         <Card className="border-red-200 bg-red-50">
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-red-600 font-medium mb-2">Error loading questions</p>
               <p className="text-sm text-red-500">{error}</p>
-              <Button onClick={loadQuestions} className="mt-4">
+              <Button onClick={loadQuestions} className="mt-4" data-cy="questions-retry-button">
                 Try Again
               </Button>
             </div>
@@ -215,15 +215,15 @@ export default function Questions() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-6 max-w-7xl" data-cy="questions-page">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Question Bank</h1>
+        <h1 className="text-3xl font-bold mb-2" data-cy="questions-title">Question Bank</h1>
         <p className="text-muted-foreground">Browse and practice ISTQB questions</p>
       </div>
 
       {/* Resume Quiz Banner */}
       {inProgressQuiz && (
-        <Card className="mb-6 border-primary bg-primary/5">
+        <Card className="mb-6 border-primary bg-primary/5" data-cy="questions-resume-quiz-banner">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -241,7 +241,7 @@ export default function Questions() {
                   </p>
                 </div>
               </div>
-              <Button onClick={() => navigate(`/quiz/${inProgressQuiz._id}`)} size="lg">
+              <Button onClick={() => navigate(`/quiz/${inProgressQuiz._id}`)} size="lg" data-cy="questions-resume-quiz-button">
                 <PlayCircle className="mr-2 h-5 w-5" />
                 Resume Quiz
               </Button>
@@ -251,7 +251,7 @@ export default function Questions() {
       )}
 
       {/* Start Quiz Section */}
-      <Card className={`mb-6 ${inProgressQuiz ? 'opacity-50 pointer-events-none' : 'bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20'}`}>
+      <Card className={`mb-6 ${inProgressQuiz ? 'opacity-50 pointer-events-none' : 'bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20'}`} data-cy="questions-start-quiz-card">
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div>
@@ -261,6 +261,7 @@ export default function Questions() {
                   type="checkbox"
                   checked={allCategories}
                   onChange={(e) => { setAllCategories(e.target.checked); if (e.target.checked) setMaxAvailable(null); }}
+                  data-cy="questions-all-categories-checkbox"
                 />
                 All categories
               </label>
@@ -274,6 +275,7 @@ export default function Questions() {
                   value={filters.category}
                   onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                   disabled={allCategories}
+                  data-cy="questions-category-select"
                 >
                   <option value="" disabled>Select a category</option>
                   {categories.map((cat) => (
@@ -294,6 +296,7 @@ export default function Questions() {
                   value={numQuestions}
                   onChange={(e) => setNumQuestions(Number(e.target.value))}
                   className="mt-1"
+                  data-cy="questions-num-questions-input"
                 />
               </div>
             </div>
@@ -313,6 +316,7 @@ export default function Questions() {
                 onClick={startQuiz} 
                 size="lg" 
                 disabled={startingQuiz || (maxAvailable === 0) || inProgressQuiz}
+                data-cy="questions-start-quiz-button"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 {startingQuiz ? 'Starting...' : 'Start Quiz'}
@@ -323,7 +327,7 @@ export default function Questions() {
       </Card>
 
       {/* Filters */}
-      <Card className="mb-6">
+      <Card className="mb-6" data-cy="questions-filters-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -343,6 +347,7 @@ export default function Questions() {
                   className="pl-9"
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  data-cy="questions-search-input"
                 />
               </div>
             </div>
@@ -353,6 +358,7 @@ export default function Questions() {
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={filters.category}
                 onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                data-cy="questions-filter-category"
               >
                 <option value="">All Categories</option>
                 {categories.map((cat) => (
@@ -369,6 +375,7 @@ export default function Questions() {
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={filters.difficulty}
                 onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
+                data-cy="questions-filter-difficulty"
               >
                 <option value="">All Levels</option>
                 {difficulties.map((diff) => (
@@ -390,7 +397,7 @@ export default function Questions() {
             <p className="text-sm text-muted-foreground">
               Showing {questions.length} questions. Go to Admin Dashboard to manage questions.
             </p>
-            <Button onClick={() => navigate('/admin')} variant="outline">
+            <Button onClick={() => navigate('/admin')} variant="outline" data-cy="questions-manage-button">
               <Edit className="mr-2 h-4 w-4" />
               Manage Questions
             </Button>

@@ -48,7 +48,7 @@ export default function Achievements() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" data-cy="achievements-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading achievements...</p>
@@ -62,14 +62,16 @@ export default function Achievements() {
   const progress = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-6 max-w-7xl" data-cy="achievements-page">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Achievements</h1>
+        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2" data-cy="achievements-title">
+          Achievements
+        </h1>
         <p className="text-muted-foreground">Track your learning milestones</p>
       </div>
 
       {newAchievements.length > 0 && (
-        <Card className="mb-6 border-yellow-500 bg-yellow-50">
+        <Card className="mb-6 border-yellow-500 bg-yellow-50" data-cy="new-achievements-card">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <Trophy className="h-12 w-12 text-yellow-600" />

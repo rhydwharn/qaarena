@@ -64,7 +64,7 @@ export default function Leaderboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" data-cy="leaderboard-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading leaderboard...</p>
@@ -74,15 +74,15 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl">
+    <div className="container mx-auto p-6 max-w-5xl" data-cy="leaderboard-page">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Leaderboard</h1>
+        <h1 className="text-3xl font-bold mb-2" data-cy="leaderboard-title">Leaderboard</h1>
         <p className="text-muted-foreground">See how you rank against other learners</p>
       </div>
 
       {/* Your Rank Card - Only show for non-admin users */}
       {userRank && !userRank.isAdmin && (
-        <Card className="mb-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+        <Card className="mb-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20" data-cy="leaderboard-user-rank-card">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">

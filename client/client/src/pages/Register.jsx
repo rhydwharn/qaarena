@@ -54,8 +54,8 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100 p-4" data-cy="register-page">
+      <Card className="w-full max-w-md" data-cy="register-card">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-primary rounded-full">
@@ -66,10 +66,10 @@ export default function Register() {
           <CardDescription>Sign up to start practicing ISTQB questions</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" data-cy="register-form">
             {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md">
-                {error}
+              <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md" data-cy="register-error-message">
+                <span data-cy="register-error-text">{error}</span>
               </div>
             )}
             <div className="space-y-2">
@@ -81,6 +81,7 @@ export default function Register() {
                 value={formData.username}
                 onChange={handleChange}
                 required
+                data-cy="register-username-input"
               />
             </div>
             <div className="space-y-2">
@@ -93,6 +94,7 @@ export default function Register() {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                data-cy="register-email-input"
               />
             </div>
             <div className="space-y-2">
@@ -105,6 +107,7 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                data-cy="register-password-input"
               />
             </div>
             <div className="space-y-2">
@@ -117,15 +120,16 @@ export default function Register() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
+                data-cy="register-confirm-password-input"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading} data-cy="register-submit-button">
               {loading ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
             <span className="text-muted-foreground">Already have an account? </span>
-            <Link to="/login" className="text-primary hover:underline font-medium">
+            <Link to="/login" className="text-primary hover:underline font-medium" data-cy="register-signin-link">
               Sign in
             </Link>
           </div>

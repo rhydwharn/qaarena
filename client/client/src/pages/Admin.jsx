@@ -268,7 +268,7 @@ export default function Admin() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" data-cy="admin-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading admin panel...</p>
@@ -278,9 +278,9 @@ export default function Admin() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-6 max-w-7xl" data-cy="admin-page">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2" data-cy="admin-title">
           <Shield className="h-8 w-8 text-primary" />
           Admin Dashboard
         </h1>
@@ -288,17 +288,17 @@ export default function Admin() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b overflow-x-auto pb-2">
-        <Button variant={activeTab === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveTab('overview')}>
+      <div className="flex gap-2 mb-6 border-b overflow-x-auto pb-2" data-cy="admin-tabs">
+        <Button variant={activeTab === 'overview' ? 'default' : 'ghost'} onClick={() => setActiveTab('overview')} data-cy="admin-tab-overview">
           Overview
         </Button>
-        <Button variant={activeTab === 'users' ? 'default' : 'ghost'} onClick={() => setActiveTab('users')}>
+        <Button variant={activeTab === 'users' ? 'default' : 'ghost'} onClick={() => setActiveTab('users')} data-cy="admin-tab-users">
           Users ({users.length})
         </Button>
-        <Button variant={activeTab === 'manage-questions' ? 'default' : 'ghost'} onClick={() => setActiveTab('manage-questions')}>
+        <Button variant={activeTab === 'manage-questions' ? 'default' : 'ghost'} onClick={() => setActiveTab('manage-questions')} data-cy="admin-tab-questions">
           Manage Questions ({allQuestions.length})
         </Button>
-        <Button variant={activeTab === 'flagged' ? 'default' : 'ghost'} onClick={() => setActiveTab('flagged')}>
+        <Button variant={activeTab === 'flagged' ? 'default' : 'ghost'} onClick={() => setActiveTab('flagged')} data-cy="admin-tab-flagged">
           Flagged ({flaggedQuestions.length})
         </Button>
       </div>
@@ -415,6 +415,7 @@ export default function Admin() {
                     onClick={toggleSelectAll}
                     variant="outline"
                     size="sm"
+                    data-cy="admin-select-all-button"
                   >
                     {selectedQuestions.length === allQuestions.length ? (
                       <>
@@ -434,6 +435,7 @@ export default function Admin() {
                       variant="destructive"
                       size="sm"
                       disabled={deleting}
+                      data-cy="admin-delete-selected-button"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       {deleting ? 'Deleting...' : `Delete ${selectedQuestions.length}`}
@@ -441,7 +443,7 @@ export default function Admin() {
                   )}
                 </>
               )}
-              <Button onClick={() => setShowQuestionForm(!showQuestionForm)}>
+              <Button onClick={() => setShowQuestionForm(!showQuestionForm)} data-cy="admin-add-question-button">
                 {showQuestionForm ? (
                   <><X className="mr-2 h-4 w-4" /> Cancel</>
                 ) : (

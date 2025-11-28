@@ -14,13 +14,13 @@ const BugHuntingHub = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-12" data-cy="bug-hunting-hub-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-4">
             <Bug className="h-16 w-16 text-red-500 mr-4" />
-            <h1 className="text-5xl font-bold text-gray-900">
+            <h1 className="text-5xl font-bold text-gray-900" data-cy="bug-hunting-hub-title">
               Bug Hunting Arena
             </h1>
           </div>
@@ -200,7 +200,7 @@ const BugHuntingHub = () => {
 
         {/* How It Works */}
         <div className="mt-16 bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 text-center mb-8" data-cy="bug-hunting-hub-title">
             How Bug Hunting Works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

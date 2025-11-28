@@ -211,7 +211,7 @@ export default function Progress() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" data-cy="progress-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading progress...</p>
@@ -221,9 +221,9 @@ export default function Progress() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-6 max-w-7xl" data-cy="progress-page">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Your Progress</h1>
+        <h1 className="text-3xl font-bold mb-2" data-cy="progress-title">Your Progress</h1>
         <p className="text-muted-foreground">Track your learning journey</p>
       </div>
 

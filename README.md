@@ -1035,6 +1035,42 @@ For support, email support@qaarena.com or open an issue on GitHub.
 
 ---
 
+## 🧪 E2E Testing with Cypress
+
+### Data-CY Locators
+
+All UI elements have `data-cy` attributes for reliable E2E testing. See `DATA_CY_LOCATORS.md` for complete reference.
+
+**Naming Convention:**
+- Pages: `{page-name}-page`
+- Forms: `{form-name}-form`
+- Inputs: `{field-name}-input`
+- Buttons: `{action}-button`
+- Lists: `{content}-list`
+- Items: `{content}-item-{id}`
+
+**Example Test:**
+```javascript
+// Login test
+cy.visit('/login');
+cy.get('[data-cy="login-email-input"]').type('test@example.com');
+cy.get('[data-cy="login-password-input"]').type('password123');
+cy.get('[data-cy="login-submit-button"]').click();
+cy.get('[data-cy="dashboard-page"]').should('be.visible');
+```
+
+**Implementation Status:**
+- ✅ Login Page - Complete
+- ✅ Register Page - Complete
+- 🔄 Dashboard Page - In Progress
+- 🔄 Quiz Page - In Progress
+- 🔄 Questions Page - In Progress
+- ⏳ Other pages - Pending
+
+See `DATA_CY_LOCATORS.md` for full locator reference.
+
+---
+
 ## 🔧 Troubleshooting
 
 ### Common Issues and Solutions

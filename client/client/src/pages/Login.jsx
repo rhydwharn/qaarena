@@ -31,8 +31,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100 p-4" data-cy="login-page">
+      <Card className="w-full max-w-md" data-cy="login-card">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-primary rounded-full">
@@ -43,11 +43,11 @@ export default function Login() {
           <CardDescription>Sign in to your QA ARENA account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" data-cy="login-form">
             {error && (
-              <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-300 rounded-md flex items-start gap-2">
+              <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-300 rounded-md flex items-start gap-2" data-cy="login-error-message">
                 <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                <span>{error}</span>
+                <span data-cy="login-error-text">{error}</span>
               </div>
             )}
             <div className="space-y-2">
@@ -59,6 +59,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                data-cy="login-email-input"
               />
             </div>
             <div className="space-y-2">
@@ -70,15 +71,16 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                data-cy="login-password-input"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading} data-cy="login-submit-button">
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
             <span className="text-muted-foreground">Don't have an account? </span>
-            <Link to="/register" className="text-primary hover:underline font-medium">
+            <Link to="/register" className="text-primary hover:underline font-medium" data-cy="login-signup-link">
               Sign up
             </Link>
           </div>

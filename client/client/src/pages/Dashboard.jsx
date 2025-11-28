@@ -168,7 +168,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" data-cy="dashboard-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
@@ -178,15 +178,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-6 max-w-7xl" data-cy="dashboard-page">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-2" data-cy="dashboard-title">Dashboard</h1>
         <p className="text-muted-foreground">Track your ISTQB certification progress</p>
       </div>
 
       {/* Resume Quiz Banner */}
       {inProgressQuiz && (
-        <Card className="mb-6 border-primary bg-primary/5">
+        <Card className="mb-6 border-primary bg-primary/5" data-cy="resume-quiz-banner">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -199,12 +199,12 @@ export default function Dashboard() {
                     You have an unfinished quiz with {inProgressQuiz.questions.length} questions
                     {inProgressQuiz.settings?.category && ` in ${inProgressQuiz.settings.category}`}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1" data-cy="resume-quiz-progress">
                     Progress: {inProgressQuiz.questions.filter(q => q.userAnswer !== undefined && q.userAnswer !== null).length}/{inProgressQuiz.questions.length} answered
                   </p>
                 </div>
               </div>
-              <Button onClick={() => navigate(`/quiz/${inProgressQuiz._id}`)} size="lg">
+              <Button onClick={() => navigate(`/quiz/${inProgressQuiz._id}`)} size="lg" data-cy="resume-quiz-button">
                 <PlayCircle className="mr-2 h-5 w-5" />
                 Resume Quiz
               </Button>
@@ -214,7 +214,7 @@ export default function Dashboard() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
+        <Card data-cy="stats-total-quizzes">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Quizzes</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -225,7 +225,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-cy="stats-average-score">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Average Score</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
@@ -236,7 +236,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-cy="stats-study-streak">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Study Streak</CardTitle>
             <Flame className="h-4 w-4 text-orange-500" />
@@ -247,7 +247,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-cy="stats-achievements">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Achievements</CardTitle>
             <Trophy className="h-4 w-4 text-yellow-500" />
@@ -260,7 +260,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card data-cy="start-quiz-card">
           <CardHeader>
             <CardTitle>Quick Start</CardTitle>
             <CardDescription>Choose a category and number of questions</CardDescription>
@@ -275,6 +275,7 @@ export default function Dashboard() {
                     className="mt-1 w-full border rounded-md h-10 px-3"
                     value={category}
                     onChange={(e) => { setCategory(e.target.value); setAllQuestions(false); }}
+                    data-cy="quiz-category-select"
                   >
                     <option value="" disabled>Select a category</option>
                     {categories.map((cat) => (
@@ -282,7 +283,7 @@ export default function Dashboard() {
                     ))}
                   </select>
                   {maxAvailable !== null && (
-                    <p className="text-xs text-muted-foreground mt-1">Max available: {maxAvailable}</p>
+                    <p className="text-xs text-muted-foreground mt-1" data-cy="quiz-available-count">Max available: {maxAvailable}</p>
                   )}
                 </div>
                 <div>
@@ -295,6 +296,7 @@ export default function Dashboard() {
                     value={numQuestions}
                     onChange={(e) => setNumQuestions(Number(e.target.value))}
                     disabled={allQuestions}
+                    data-cy="quiz-num-questions-input"
                   />
                   {maxAvailable !== null && (
                     <p className="text-xs text-muted-foreground mt-1">You can pick up to {maxAvailable} in this category</p>
@@ -307,27 +309,28 @@ export default function Dashboard() {
                   checked={allQuestions}
                   onChange={(e) => setAllQuestions(e.target.checked)}
                   disabled={!category || maxAvailable === null}
+                  data-cy="quiz-all-questions-checkbox"
                 />
                 Select all questions in this category
               </label>
             </div>
 
-            <Button onClick={startQuiz} className="w-full" size="lg" disabled={!category || (maxAvailable === 0)}>
+            <Button onClick={startQuiz} className="w-full" size="lg" disabled={!category || (maxAvailable === 0)} data-cy="quiz-start-button">
               <PlayCircle className="mr-2 h-5 w-5" />
               Start Practice Quiz
             </Button>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => navigate('/questions')}>
+              <Button variant="outline" onClick={() => navigate('/questions')} data-cy="browse-questions-button">
                 Browse Questions
               </Button>
-              <Button variant="outline" onClick={() => navigate('/progress')}>
+              <Button variant="outline" onClick={() => navigate('/progress')} data-cy="view-progress-button">
                 View Progress
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-cy="recent-activity-card">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
             <CardDescription>Your latest quiz attempts</CardDescription>

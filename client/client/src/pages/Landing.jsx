@@ -75,7 +75,7 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white" data-cy="landing-page">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -84,11 +84,13 @@ export default function Landing() {
             <span className="text-xl font-bold text-gray-900">QA ARENA</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/events">
-              <Button variant="ghost">Events</Button>
+            <Link to="/login">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6" data-cy="landing-login-button">
+                Login
+              </Button>
             </Link>
             <Link to="/register">
-              <Button className="bg-teal-600 hover:bg-teal-700">Sign Up</Button>
+              <Button size="lg" className="text-lg px-8 py-6" data-cy="landing-get-started-button">Sign Up</Button>
             </Link>
           </div>
         </div>
