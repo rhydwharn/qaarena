@@ -1035,6 +1035,150 @@ For support, email support@qaarena.com or open an issue on GitHub.
 
 ---
 
+## 🔧 Troubleshooting
+
+### Common Issues and Solutions
+
+#### **Issue 1: Token Expired During Quiz**
+
+**Problem:** Users get "Token is invalid or expired" error while taking quizzes.
+
+**Solution:**
+1. Update `JWT_EXPIRE` in your `.env` file:
+   ```bash
+   JWT_EXPIRE=7d  # Change from 10m to 7d
+   ```
+2. For production, update environment variable in hosting dashboard (Render/Heroku/Railway)
+3. Restart server
+
+**Why:** Default 10-minute expiration is too short for quiz sessions.
+
+---
+
+#### **Issue 2: Production Using Localhost API**
+
+**Problem:** Frontend on production calls `http://localhost:5001/api` instead of production backend.
+
+**Solution:**
+
+**Method 1 (Recommended):** Set environment variable in hosting platform
+- Vercel/Netlify/Render: Add `VITE_API_URL=https://your-backend-url.com/api`
+
+**Method 2:** Update `.env.production` file
+```bash
+# client/client/.env.production
+VITE_API_URL=https://your-backend-url.com/api
+```
+
+Then commit and push:
+```bash
+git add client/client/.env.production
+git commit -m "fix: Configure production API URL"
+git push origin main
+```
+
+---
+
+#### **Issue 3: CORS Errors**
+
+**Problem:** Frontend can't connect to backend due to CORS policy.
+
+**Solution:** Update `server.js` CORS configuration:
+```javascript
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://your-frontend-url.vercel.app',
+    'https://your-frontend-url.netlify.app'
+  ],
+  credentials: true
+}));
+```
+
+---
+
+#### **Issue 4: MongoDB Connection Failed**
+
+**Problem:** Backend can't connect to MongoDB.
+
+**Solution:**
+1. Check `MONGODB_URI` in `.env`
+2. Verify MongoDB Atlas IP whitelist (allow `0.0.0.0/0` for production)
+3. Ensure database user has correct permissions
+4. Check network connectivity
+
+---
+
+#### **Issue 5: Build Fails on Production**
+
+**Problem:** Frontend build fails during deployment.
+
+**Solution:**
+1. Check build logs for specific errors
+2. Ensure all dependencies are in `package.json`
+3. Verify Node.js version compatibility
+4. Clear build cache and retry
+5. Check environment variables are set
+
+---
+
+#### **Issue 6: Questions Not Loading**
+
+**Problem:** Questions page shows empty or loading indefinitely.
+
+**Solution:**
+1. Check browser console for errors
+2. Verify API endpoint is accessible
+3. Check if questions exist in database
+4. Verify user authentication token
+5. Check network tab for failed requests
+
+---
+
+### Quick Deployment Commands
+
+```bash
+# Update production with latest changes
+git add .
+git commit -m "feat: Your changes description"
+git push origin main
+
+# Force redeploy (if auto-deploy not working)
+git commit --allow-empty -m "chore: trigger deployment"
+git push origin main
+
+# Check environment variables
+# Local: cat .env
+# Production: Check hosting dashboard
+
+# Restart local server
+npm run dev
+
+# Test production API
+curl https://your-backend-url.com/api/health
+```
+
+---
+
+### Environment Variables Checklist
+
+**Backend (.env):**
+```bash
+NODE_ENV=production
+PORT=5001
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=your-secret-key
+JWT_EXPIRE=7d
+CORS_ORIGIN=https://your-frontend-url.com
+```
+
+**Frontend (client/client/.env.production):**
+```bash
+VITE_API_URL=https://your-backend-url.com/api
+```
+
+---
+
 ## 🗺️ Roadmap
 
 ### Upcoming Features

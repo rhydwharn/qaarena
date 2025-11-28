@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const { register, login, getMe, updateProfile, changePassword } = require('../controllers/authController');
+const { register, login, getMe, updateProfile, changePassword, refreshToken, extendToken } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
 const { authLimiter } = require('../middleware/rateLimiter');
@@ -26,5 +26,9 @@ router.put('/change-password', protect, [
   body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
   validate
 ], changePassword);
+
+// Token management routes
+router.post('/refresh', protect, refreshToken);
+router.post('/extend', protect, extendToken);
 
 module.exports = router;

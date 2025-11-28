@@ -149,3 +149,58 @@ exports.changePassword = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Refresh token
+// @route   POST /api/auth/refresh
+// @access  Private
+exports.refreshToken = async (req, res, next) => {
+  try {
+    const user = req.user; // From auth middleware
+    
+    // Generate new token with same expiration as original
+    const newToken = generateToken(user._id);
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Token refreshed successfully',
+      data: {
+        token: newToken,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          points: user.points
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Extend token expiration (for active quiz sessions)
+// @route   POST /api/auth/extend
+// @access  Private
+exports.extendToken = async (req, res, next) => {
+  try {
+    const user = req.user;
+    
+    // Generate new token with extended expiration (2 hours)
+    const extendedToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
+    );
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Token extended successfully',
+      data: {
+        token: extendedToken
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

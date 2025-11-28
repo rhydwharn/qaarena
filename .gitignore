@@ -27,9 +27,18 @@ coverage/
 
 # Env files (sensitive)
 .env
-.env.*
+.env.local
+.env.*.local
 client/.env
+client/.env.local
 client/client/.env
+client/client/.env.local
+
+# Allow production env files (non-sensitive)
+!.env.production
+!.env.example
+!client/.env.production
+!client/client/.env.production
 
 # Local data
 *.sqlite
@@ -86,3 +95,11 @@ docs/archive/
 
 # Old test files
 QA_Unplugged_Haven_Test_Cases.xlsx
+
+# Temporary fix/setup documentation (use main README instead)
+FIX_*.md
+PRODUCTION_*.md
+*-fix.sh
+*-setup.sh
+quick-*.sh
+deploy-to-*.sh
