@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Download, Bug, Radio, MessageSquare, BookMarked, Calendar, Trophy } from 'lucide-react';
+import { BookOpen, Download, Bug, Radio, MessageSquare, Code2, Calendar, Trophy } from 'lucide-react';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -59,11 +59,11 @@ export default function Landing() {
       link: '#'
     },
     {
-      icon: <BookMarked className="h-8 w-8" />,
-      title: 'QA Jargons & Meanings',
-      description: 'Master QA terminology with our comprehensive glossary of testing jargons and definitions.',
+      icon: <Code2 className="h-8 w-8" />,
+      title: 'Test Automation Arena',
+      description: 'Practice Cypress, Playwright & Selenium on real apps with complete data-cy locators.',
       color: 'bg-yellow-500',
-      link: '#'
+      link: '/arena'
     },
     {
       icon: <Calendar className="h-8 w-8" />,
@@ -253,7 +253,7 @@ export default function Landing() {
               <ul className="space-y-2 text-gray-600 text-sm">
                 <li className="hover:text-teal-600 cursor-pointer">QA Materials</li>
                 <li className="hover:text-teal-600 cursor-pointer">Interview Prep</li>
-                <li className="hover:text-teal-600 cursor-pointer">QA Jargons</li>
+                <li><Link to="/arena" className="hover:text-teal-600">Test Automation Arena</Link></li>
               </ul>
             </div>
           </div>

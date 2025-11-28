@@ -20,6 +20,17 @@ import FunctionalBugHunting from './pages/FunctionalBugHunting';
 import FunctionalBugScenario from './pages/FunctionalBugScenario';
 import QuestionUpload from './pages/QuestionUpload';
 
+// Test Automation Arena imports
+import ArenaLanding from './pages/automation-arena/ArenaLanding';
+import ArenaSignUp from './pages/automation-arena/ArenaSignUp';
+import ArenaSignIn from './pages/automation-arena/ArenaSignIn';
+import ArenaDashboard from './pages/automation-arena/ArenaDashboard';
+import EcommerceSimulator from './pages/automation-arena/simulators/EcommerceSimulator';
+import SchoolManagementSimulator from './pages/automation-arena/simulators/SchoolManagementSimulator';
+import ATMSimulator from './pages/automation-arena/simulators/ATMSimulator';
+import FundsTransferSimulator from './pages/automation-arena/simulators/FundsTransferSimulator';
+import AuthSimulator from './pages/automation-arena/simulators/AuthSimulator';
+
 // Lazy load Admin page
 const Admin = lazy(() => import('./pages/Admin'));
 
@@ -47,6 +58,17 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/events" element={<Events />} />
+          
+          {/* Test Automation Arena - Public Routes */}
+          <Route path="/arena" element={<ArenaLanding />} />
+          <Route path="/arena/signup" element={<ArenaSignUp />} />
+          <Route path="/arena/signin" element={<ArenaSignIn />} />
+          <Route path="/arena/dashboard" element={<ArenaDashboard />} />
+          <Route path="/arena/auth-simulator" element={<AuthSimulator />} />
+          <Route path="/arena/simulator/ecommerce" element={<EcommerceSimulator />} />
+          <Route path="/arena/simulator/school" element={<SchoolManagementSimulator />} />
+          <Route path="/arena/simulator/atm" element={<ATMSimulator />} />
+          <Route path="/arena/simulator/transfer" element={<FundsTransferSimulator />} />
           
           {/* Public Bug Hunting Routes with Navbar */}
           <Route element={<Layout />}>

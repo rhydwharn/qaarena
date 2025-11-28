@@ -1,0 +1,716 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Label } from '../../../components/ui/label';
+import { ArrowLeft, Mail, Lock, User, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+
+export default function AuthSimulator() {
+  const [view, setView] = useState('intro'); // intro, signup, signin, verify-email, success, dashboard
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
+  const [message, setMessage] = useState('');
+
+  const validateSignUp = () => {
+    const newErrors = {};
+    
+    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    
+    if (!validateSignUp()) return;
+
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/arena-auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setView('verify-email');
+      } else {
+        setErrors({ submit: data.message || 'Sign up failed' });
+      }
+    } catch (error) {
+      setErrors({ submit: 'Network error. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async (e) => {
+    e.preventDefault();
+
+    if (!verificationToken.trim()) {
+      setErrors({ token: 'Please enter the verification token' });
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/arena-auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: verificationToken })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setView('success');
+      } else {
+        setErrors({ token: data.message || 'Invalid or expired token' });
+      }
+    } catch (error) {
+      setErrors({ token: 'Network error. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+
+    if (!formData.email || !formData.password) {
+      setErrors({ submit: 'Email and password are required' });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/arena-auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('arena_sim_token', data.token);
+        localStorage.setItem('arena_sim_user', JSON.stringify(data.user));
+        setView('dashboard');
+      } else {
+        setErrors({ submit: data.message || 'Sign in failed' });
+      }
+    } catch (error) {
+      setErrors({ submit: 'Network error. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Intro View
+  if (view === 'intro') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-6" data-cy="auth-sim-intro">
+        <div className="max-w-4xl mx-auto">
+          <Link to="/arena">
+            <Button variant="ghost" className="mb-6" data-cy="auth-sim-back">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Arena
+            </Button>
+          </Link>
+
+          <Card className="border-2 border-purple-200">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="p-4 bg-purple-100 rounded-full">
+                  <Lock className="h-12 w-12 text-purple-600" />
+                </div>
+              </div>
+              <CardTitle className="text-3xl" data-cy="auth-sim-title">
+                🔐 Authentication Simulator
+              </CardTitle>
+              <CardDescription className="text-lg" data-cy="auth-sim-description">
+                Learn to test complete authentication flows with real email verification
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                  <h3 className="font-semibold text-blue-900 mb-2">🎯 What You'll Learn:</h3>
+                  <ul className="space-y-2 text-sm text-blue-800">
+                    <li>✅ Test user registration forms with validation</li>
+                    <li>✅ Handle email verification workflows</li>
+                    <li>✅ Extract and use verification tokens from emails</li>
+                    <li>✅ Test sign-in functionality</li>
+                    <li>✅ Verify authenticated dashboard access</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                  <h3 className="font-semibold text-green-900 mb-2">📧 Real Email Verification:</h3>
+                  <p className="text-sm text-green-800">
+                    This simulator sends <strong>real verification emails</strong> to your inbox. 
+                    You'll practice extracting tokens and completing the verification flow - 
+                    a critical skill for E2E testing!
+                  </p>
+                </div>
+
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <h3 className="font-semibold text-yellow-900 mb-2">🧪 Testing Scenarios:</h3>
+                  <ul className="space-y-1 text-sm text-yellow-800">
+                    <li>• Form validation (required fields, email format, password strength)</li>
+                    <li>• Email delivery verification</li>
+                    <li>• Token extraction and usage</li>
+                    <li>• Expired token handling</li>
+                    <li>• Successful authentication flow</li>
+                  </ul>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <Button 
+                    size="lg" 
+                    onClick={() => setView('signup')}
+                    data-cy="auth-sim-start-signup"
+                  >
+                    Start with Sign Up
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    onClick={() => setView('signin')}
+                    data-cy="auth-sim-start-signin"
+                  >
+                    Go to Sign In
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Sign Up View
+  if (view === 'signup') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-6" data-cy="auth-sim-signup-page">
+        <Card className="w-full max-w-md" data-cy="auth-sim-signup-card">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-4">
+              <Button variant="ghost" size="sm" onClick={() => setView('intro')} data-cy="auth-sim-signup-back">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <CardTitle className="text-2xl" data-cy="auth-sim-signup-title">
+                  Create Account
+                </CardTitle>
+                <CardDescription data-cy="auth-sim-signup-description">
+                  Sign up to test email verification
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSignUp} data-cy="auth-sim-signup-form">
+              <div className="space-y-4">
+                {errors.submit && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md" data-cy="auth-sim-signup-error">
+                    <p className="text-sm text-red-600">{errors.submit}</p>
+                  </div>
+                )}
+
+                <div data-cy="auth-sim-firstname-field">
+                  <Label htmlFor="firstName" data-cy="auth-sim-firstname-label">First Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      className="pl-10"
+                      data-cy="auth-sim-firstname-input"
+                    />
+                  </div>
+                  {errors.firstName && <p className="text-sm text-red-600 mt-1" data-cy="auth-sim-firstname-error">{errors.firstName}</p>}
+                </div>
+
+                <div data-cy="auth-sim-lastname-field">
+                  <Label htmlFor="lastName" data-cy="auth-sim-lastname-label">Last Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      className="pl-10"
+                      data-cy="auth-sim-lastname-input"
+                    />
+                  </div>
+                  {errors.lastName && <p className="text-sm text-red-600 mt-1" data-cy="auth-sim-lastname-error">{errors.lastName}</p>}
+                </div>
+
+                <div data-cy="auth-sim-email-field">
+                  <Label htmlFor="email" data-cy="auth-sim-email-label">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="pl-10"
+                      data-cy="auth-sim-email-input"
+                    />
+                  </div>
+                  {errors.email && <p className="text-sm text-red-600 mt-1" data-cy="auth-sim-email-error">{errors.email}</p>}
+                </div>
+
+                <div data-cy="auth-sim-password-field">
+                  <Label htmlFor="password" data-cy="auth-sim-password-label">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="pl-10"
+                      data-cy="auth-sim-password-input"
+                    />
+                  </div>
+                  {errors.password && <p className="text-sm text-red-600 mt-1" data-cy="auth-sim-password-error">{errors.password}</p>}
+                </div>
+
+                <div data-cy="auth-sim-confirm-field">
+                  <Label htmlFor="confirmPassword" data-cy="auth-sim-confirm-label">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      className="pl-10"
+                      data-cy="auth-sim-confirm-input"
+                    />
+                  </div>
+                  {errors.confirmPassword && <p className="text-sm text-red-600 mt-1" data-cy="auth-sim-confirm-error">{errors.confirmPassword}</p>}
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading}
+                  data-cy="auth-sim-signup-submit"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    'Sign Up'
+                  )}
+                </Button>
+
+                <p className="text-center text-sm text-gray-600">
+                  Already have an account?{' '}
+                  <button 
+                    type="button"
+                    onClick={() => setView('signin')} 
+                    className="text-purple-600 hover:underline"
+                    data-cy="auth-sim-goto-signin"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Email Verification View
+  if (view === 'verify-email') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-6" data-cy="auth-sim-verify-page">
+        <Card className="w-full max-w-md" data-cy="auth-sim-verify-card">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-blue-100 rounded-full">
+                <Mail className="h-12 w-12 text-blue-600" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl" data-cy="auth-sim-verify-title">
+              Check Your Email! 📧
+            </CardTitle>
+            <CardDescription data-cy="auth-sim-verify-description">
+              We've sent a verification email to <strong>{formData.email}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleVerifyEmail} data-cy="auth-sim-verify-form">
+              <div className="space-y-4">
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <h3 className="font-semibold text-yellow-900 mb-2">📝 Instructions:</h3>
+                  <ol className="text-sm text-yellow-800 space-y-1 list-decimal list-inside">
+                    <li>Open your email inbox</li>
+                    <li>Find the verification email</li>
+                    <li>Copy the 6-digit verification token</li>
+                    <li>Paste it below and click Verify</li>
+                  </ol>
+                </div>
+
+                {errors.token && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md" data-cy="auth-sim-verify-error">
+                    <p className="text-sm text-red-600">{errors.token}</p>
+                  </div>
+                )}
+
+                <div data-cy="auth-sim-token-field">
+                  <Label htmlFor="token" data-cy="auth-sim-token-label">Verification Token</Label>
+                  <Input
+                    id="token"
+                    value={verificationToken}
+                    onChange={(e) => setVerificationToken(e.target.value)}
+                    placeholder="Enter 6-digit token"
+                    maxLength={6}
+                    className="text-center text-2xl tracking-widest"
+                    data-cy="auth-sim-token-input"
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading}
+                  data-cy="auth-sim-verify-submit"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    'Verify Email'
+                  )}
+                </Button>
+
+                <p className="text-center text-sm text-gray-600">
+                  Didn't receive the email?{' '}
+                  <button 
+                    type="button"
+                    onClick={() => setView('signup')} 
+                    className="text-purple-600 hover:underline"
+                    data-cy="auth-sim-resend"
+                  >
+                    Try again
+                  </button>
+                </p>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Success View
+  if (view === 'success') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-6" data-cy="auth-sim-success-page">
+        <Card className="w-full max-w-md" data-cy="auth-sim-success-card">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-green-100 rounded-full">
+                <CheckCircle className="h-12 w-12 text-green-600" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl" data-cy="auth-sim-success-title">
+              Email Verified! ✅
+            </CardTitle>
+            <CardDescription data-cy="auth-sim-success-description">
+              Your account has been successfully verified
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-sm text-green-800 text-center">
+                  Great job! You've successfully completed the email verification flow. 
+                  Now you can sign in to access your dashboard.
+                </p>
+              </div>
+
+              <Button 
+                className="w-full" 
+                onClick={() => setView('signin')}
+                data-cy="auth-sim-goto-signin-success"
+              >
+                Continue to Sign In
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Sign In View
+  if (view === 'signin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-6" data-cy="auth-sim-signin-page">
+        <Card className="w-full max-w-md" data-cy="auth-sim-signin-card">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-4">
+              <Button variant="ghost" size="sm" onClick={() => setView('intro')} data-cy="auth-sim-signin-back">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <CardTitle className="text-2xl" data-cy="auth-sim-signin-title">
+                  Sign In
+                </CardTitle>
+                <CardDescription data-cy="auth-sim-signin-description">
+                  Access your simulator dashboard
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSignIn} data-cy="auth-sim-signin-form">
+              <div className="space-y-4">
+                {errors.submit && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md" data-cy="auth-sim-signin-error">
+                    <p className="text-sm text-red-600">{errors.submit}</p>
+                  </div>
+                )}
+
+                <div data-cy="auth-sim-signin-email-field">
+                  <Label htmlFor="email" data-cy="auth-sim-signin-email-label">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="pl-10"
+                      data-cy="auth-sim-signin-email-input"
+                    />
+                  </div>
+                </div>
+
+                <div data-cy="auth-sim-signin-password-field">
+                  <Label htmlFor="password" data-cy="auth-sim-signin-password-label">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="pl-10"
+                      data-cy="auth-sim-signin-password-input"
+                    />
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading}
+                  data-cy="auth-sim-signin-submit"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing In...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </Button>
+
+                <p className="text-center text-sm text-gray-600">
+                  Don't have an account?{' '}
+                  <button 
+                    type="button"
+                    onClick={() => setView('signup')} 
+                    className="text-purple-600 hover:underline"
+                    data-cy="auth-sim-goto-signup"
+                  >
+                    Sign Up
+                  </button>
+                </p>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Dashboard View (Success!)
+  if (view === 'dashboard') {
+    const user = JSON.parse(localStorage.getItem('arena_sim_user') || '{}');
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-6" data-cy="auth-sim-dashboard">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-4 border-green-400 shadow-2xl">
+            <CardHeader className="text-center bg-gradient-to-r from-green-50 to-emerald-50">
+              <div className="flex justify-center mb-6">
+                <div className="p-6 bg-green-100 rounded-full animate-bounce">
+                  <CheckCircle className="h-16 w-16 text-green-600" />
+                </div>
+              </div>
+              <CardTitle className="text-4xl font-bold text-green-900 mb-4" data-cy="auth-sim-dashboard-title">
+                🎉 YOU HAVE JUST CROSSED A MAJOR HURDLE!
+              </CardTitle>
+              <CardDescription className="text-xl text-green-700" data-cy="auth-sim-dashboard-subtitle">
+                WELCOME AND CONTINUE LEARNING
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-8">
+              <div className="space-y-6">
+                <div className="p-6 bg-white border-2 border-green-200 rounded-lg">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                    Welcome, {user.firstName} {user.lastName}! 👋
+                  </h3>
+                  <p className="text-gray-700 mb-4">
+                    Congratulations on completing the Authentication Simulator! You've successfully:
+                  </p>
+                  <ul className="space-y-2 text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Tested user registration with form validation</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Received and verified a real email verification token</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Completed the sign-in authentication flow</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Accessed a protected dashboard</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                  <h3 className="text-xl font-bold text-blue-900 mb-3">
+                    🧪 What You Learned:
+                  </h3>
+                  <ul className="space-y-2 text-blue-800">
+                    <li>• How to automate email verification workflows</li>
+                    <li>• Extracting tokens from emails for testing</li>
+                    <li>• Testing complete authentication flows</li>
+                    <li>• Handling form validation and error states</li>
+                    <li>• Verifying protected route access</li>
+                  </ul>
+                </div>
+
+                <div className="p-6 bg-purple-50 border-2 border-purple-200 rounded-lg">
+                  <h3 className="text-xl font-bold text-purple-900 mb-3">
+                    🚀 Next Steps:
+                  </h3>
+                  <p className="text-purple-800 mb-4">
+                    You're now ready to tackle more complex simulators! Try these next:
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Link to="/arena/simulator/ecommerce">
+                      <Button variant="outline" className="w-full" data-cy="auth-sim-next-ecommerce">
+                        🛒 E-Commerce
+                      </Button>
+                    </Link>
+                    <Link to="/arena/simulator/school">
+                      <Button variant="outline" className="w-full" data-cy="auth-sim-next-school">
+                        🎓 School Mgmt
+                      </Button>
+                    </Link>
+                    <Link to="/arena/simulator/atm">
+                      <Button variant="outline" className="w-full" data-cy="auth-sim-next-atm">
+                        💳 ATM
+                      </Button>
+                    </Link>
+                    <Link to="/arena/simulator/transfer">
+                      <Button variant="outline" className="w-full" data-cy="auth-sim-next-transfer">
+                        💸 Funds Transfer
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <Button 
+                    className="flex-1" 
+                    onClick={() => {
+                      localStorage.removeItem('arena_sim_token');
+                      localStorage.removeItem('arena_sim_user');
+                      setView('intro');
+                      setFormData({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
+                    }}
+                    data-cy="auth-sim-try-again"
+                  >
+                    Try Again
+                  </Button>
+                  <Link to="/arena/dashboard" className="flex-1">
+                    <Button variant="outline" className="w-full" data-cy="auth-sim-all-simulators">
+                      View All Simulators
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}

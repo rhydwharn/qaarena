@@ -6,7 +6,7 @@ import { Progress } from '../components/ui/progress';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { progressAPI, quizAPI, questionsAPI } from '../services/api';
-import { BookOpen, Trophy, Target, Flame, PlayCircle } from 'lucide-react';
+import { BookOpen, Trophy, Target, Flame, PlayCircle, Code2, ArrowRight } from 'lucide-react';
 import { getCategories, formatCategoriesForSelect } from '../services/categoryService';
 
 export default function Dashboard() {
@@ -258,6 +258,40 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Test Automation Arena Banner */}
+      <Card className="mb-8 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200" data-cy="automation-arena-banner">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center">
+                <Code2 className="h-8 w-8 text-yellow-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-xl text-gray-900 mb-1">🚀 New: Test Automation Arena</h3>
+                <p className="text-sm text-gray-700 mb-2">
+                  Practice Cypress, Playwright & Selenium on 4 real applications with complete data-cy locators
+                </p>
+                <div className="flex gap-2 text-xs text-gray-600">
+                  <span className="bg-white px-2 py-1 rounded">🛒 E-Commerce</span>
+                  <span className="bg-white px-2 py-1 rounded">🎓 School Mgmt</span>
+                  <span className="bg-white px-2 py-1 rounded">💳 ATM</span>
+                  <span className="bg-white px-2 py-1 rounded">💸 Funds Transfer</span>
+                </div>
+              </div>
+            </div>
+            <Button 
+              onClick={() => navigate('/arena')} 
+              size="lg"
+              className="bg-yellow-600 hover:bg-yellow-700"
+              data-cy="automation-arena-cta"
+            >
+              Launch Arena
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card data-cy="start-quiz-card">

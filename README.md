@@ -32,6 +32,7 @@
 ### Key Highlights
 
 - ✅ **1000+ Practice Questions** across all ISTQB Foundation Level topics
+- ✅ **Test Automation Arena** - 5 complete simulators with 500+ data-cy locators
 - ✅ **Interactive Bug Hunting** with real-world scenarios and simulators
 - ✅ **Smart Quiz System** with resume capability and progress tracking
 - ✅ **Excel Bulk Upload** for easy question management
@@ -348,7 +349,107 @@ Select Scenario → Interact with Simulator → Find Bug → Report Bug → Get 
 
 ---
 
-### 3. Question Management
+### 3. Test Automation Arena
+
+#### Overview
+A comprehensive training platform for learning Cypress, Playwright, and Selenium with **5 complete application simulators**. Every element has `data-cy` attributes for seamless test automation practice.
+
+#### Available Simulators
+
+**🔐 1. Authentication Simulator**
+- Complete sign-up flow with form validation
+- Real email verification with 6-digit tokens
+- Sign-in authentication
+- Success dashboard with celebration message
+- **Learning Focus:** Email verification workflows, token extraction, auth testing
+
+**🛒 2. E-Commerce Simulator**
+- Product browsing with search and filters
+- Shopping cart management (add, update, remove)
+- Checkout flow with order summary
+- Order confirmation
+- **Learning Focus:** E2E shopping flows, cart calculations, checkout testing
+
+**🎓 3. School Management Simulator**
+- Student enrollment form (7 fields)
+- Student list view
+- Course catalog and registration
+- Grade tracking
+- **Learning Focus:** Form submissions, CRUD operations, data management
+
+**💳 4. ATM Simulator**
+- PIN authentication (Demo: 1234)
+- Balance inquiry
+- Cash withdrawal/deposit with validation
+- Mini statement (transaction history)
+- PIN change functionality
+- Interactive number keypad
+- **Learning Focus:** Financial transactions, validation testing, state management
+
+**💸 5. Funds Transfer Simulator**
+- Money transfer form
+- Beneficiary management (add/delete)
+- OTP verification (Demo: 123456)
+- Transaction history
+- Balance updates
+- **Learning Focus:** Multi-step flows, OTP verification, transaction testing
+
+#### Access Methods
+
+**For Logged-In Users:**
+- Navigate from main dashboard → "Test Automation Arena"
+- Main app login is preserved
+- Direct access to all simulators
+
+**For Guests:**
+- Visit `/arena` landing page
+- Try demo mode (no authentication)
+- Try Auth Simulator (with real email verification)
+
+#### Data-CY Locators
+- **500+ unique locators** across all simulators
+- Consistent naming: `{simulator}-{element}-{action}`
+- Examples:
+  - `ecommerce-add-to-cart-1`
+  - `atm-pin-input`
+  - `transfer-otp-verify`
+  - `school-enroll-submit`
+  - `auth-sim-signup-form`
+
+#### Routes
+```
+/arena                          → Landing page
+/arena/dashboard                → Simulator hub
+/arena/auth-simulator           → Authentication simulator
+/arena/simulator/ecommerce      → E-Commerce app
+/arena/simulator/school         → School Management
+/arena/simulator/atm            → ATM simulator
+/arena/simulator/transfer       → Funds Transfer
+```
+
+#### Backend Setup (Auth Simulator)
+The Auth Simulator requires backend API for real email verification. See `AUTH_SIMULATOR_BACKEND_GUIDE.md` for:
+- Email service setup (Nodemailer)
+- JWT configuration
+- MongoDB schema
+- API endpoints
+- Complete implementation code
+
+#### Quick Start
+```bash
+# Access the arena
+http://localhost:5173/arena
+
+# Try demo mode (no auth)
+Click "Try Demo" → Access all simulators
+
+# Try Auth Simulator (with email)
+Click "Try Auth Simulator" → Complete sign-up flow
+```
+
+---
+
+### 4. Question Management
 
 #### Excel Upload System
 

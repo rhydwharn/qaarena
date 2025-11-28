@@ -103,3 +103,11 @@ PRODUCTION_*.md
 *-setup.sh
 quick-*.sh
 deploy-to-*.sh
+
+AUTH_SIMULATOR_BACKEND_GUIDE.md
+DATA_CY_LOCATORS.md
+deploy-prepare.sh
+DOCUMENTATION_CLEANUP_SUMMARY.md
+functional-bugs-data.json
+SOFTWARE_REQUIREMENTS_DOCUMENT.md
+TEST_AUTOMATION_ARENA.md
