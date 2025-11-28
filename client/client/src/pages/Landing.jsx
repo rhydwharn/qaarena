@@ -9,7 +9,7 @@ import { BookOpen, Download, Bug, Radio, MessageSquare, Code2, Calendar, Trophy 
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -84,14 +84,25 @@ export default function Landing() {
             <span className="text-xl font-bold text-gray-900">QA ARENA</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/login">
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6" data-cy="landing-login-button">
-                Login
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button size="lg" className="text-lg px-8 py-6" data-cy="landing-get-started-button">Sign Up</Button>
-            </Link>
+            {!user ? (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" size="lg" className="text-lg px-8 py-6" data-cy="landing-login-button">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button size="lg" className="text-lg px-8 py-6" data-cy="landing-get-started-button">Sign Up</Button>
+                </Link>
+              </>
+            ) : (
+              <Link to="/dashboard">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  <Trophy className="h-5 w-5 mr-2" />
+                  Go to Dashboard
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -147,83 +158,145 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Right Column - Login Card */}
+          {/* Right Column - Login Card or Info Card */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
-              <Card className="shadow-lg">
-                <CardHeader className="text-center">
-                  <div className="mx-auto mb-4">
-                    <img src="/web_logo.png" alt="QA ARENA" className="h-16 w-16 object-contain rounded-xl" />
-                  </div>
-                  <CardTitle className="text-xl">Start Your QA Journey</CardTitle>
-                  <p className="text-sm text-gray-600 mt-2">Login to access 500+ questions</p>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    {error && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-600">{error}</p>
+              {!user ? (
+                <Card className="shadow-lg">
+                  <CardHeader className="text-center">
+                    <div className="mx-auto mb-4">
+                      <img src="/web_logo.png" alt="QA ARENA" className="h-16 w-16 object-contain rounded-xl" />
+                    </div>
+                    <CardTitle className="text-xl">Start Your QA Journey</CardTitle>
+                    <p className="text-sm text-gray-600 mt-2">Login to access 500+ questions</p>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      {error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                          <p className="text-sm text-red-600">{error}</p>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          required
+                        />
                       </div>
-                    )}
-                    
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        required
-                      />
+
+                      <div>
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-teal-600 hover:bg-teal-700" 
+                        disabled={loading}
+                      >
+                        {loading ? 'Logging in...' : 'Login'}
+                      </Button>
+
+                      <p className="text-center text-sm text-gray-600">
+                        Don't have an account?{' '}
+                        <Link to="/register" className="text-teal-600 hover:underline">
+                          Sign up
+                        </Link>
+                      </p>
+                    </form>
+
+                    <div className="mt-6 pt-6 border-t">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Questions</span>
+                          <span className="font-bold text-teal-600">50+</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Categories</span>
+                          <span className="font-bold text-teal-600">3</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Access</span>
+                          <span className="font-bold text-teal-600">24/7</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="shadow-lg border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50">
+                  <CardHeader className="text-center">
+                    <div className="mx-auto mb-4">
+                      <img src="/web_logo.png" alt="QA ARENA" className="h-16 w-16 object-contain rounded-xl" />
+                    </div>
+                    <CardTitle className="text-2xl text-teal-900">Welcome to QA ARENA</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="text-center">
+                      <p className="text-gray-700 leading-relaxed mb-4">
+                        This is an <span className="font-bold text-teal-700">arena for Quality Assurance engineers</span> to test their knowledge and skillsets.
+                      </p>
+                      <p className="text-gray-700 leading-relaxed mb-4">
+                        Challenge yourself with interactive quizzes, hunt bugs in real scenarios, and master test automation with hands-on practice.
+                      </p>
                     </div>
 
-                    <div>
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        required
-                      />
-                    </div>
-
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-teal-600 hover:bg-teal-700" 
-                      disabled={loading}
-                    >
-                      {loading ? 'Logging in...' : 'Login'}
-                    </Button>
-
-                    <p className="text-center text-sm text-gray-600">
-                      Don't have an account?{' '}
-                      <Link to="/register" className="text-teal-600 hover:underline">
-                        Sign up
-                      </Link>
-                    </p>
-                  </form>
-
-                  <div className="mt-6 pt-6 border-t">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Questions</span>
-                        <span className="font-bold text-teal-600">50+</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Categories</span>
-                        <span className="font-bold text-teal-600">3</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Access</span>
-                        <span className="font-bold text-teal-600">24/7</span>
+                    <div className="pt-6 border-t border-teal-200">
+                      <div className="text-center mb-4">
+                        <Trophy className="h-12 w-12 mx-auto text-teal-600 mb-2" />
+                        <p className="text-sm font-semibold text-teal-900">Championed by</p>
+                        <p className="text-lg font-bold text-teal-700">Ridwan Abdulazeez</p>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+
+                    <div className="pt-6 border-t border-teal-200">
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-teal-600" />
+                            Questions
+                          </span>
+                          <span className="font-bold text-teal-700">50+</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 flex items-center gap-2">
+                            <Bug className="h-4 w-4 text-teal-600" />
+                            Bug Scenarios
+                          </span>
+                          <span className="font-bold text-teal-700">10+</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 flex items-center gap-2">
+                            <Code2 className="h-4 w-4 text-teal-600" />
+                            Automation Simulators
+                          </span>
+                          <span className="font-bold text-teal-700">5+</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link to="/dashboard">
+                      <Button className="w-full bg-teal-600 hover:bg-teal-700 text-lg py-6">
+                        <Trophy className="h-5 w-5 mr-2" />
+                        Go to Dashboard
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>

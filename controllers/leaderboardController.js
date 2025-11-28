@@ -25,16 +25,33 @@ exports.getGlobalLeaderboard = async (req, res, next) => {
       });
     }
 
-    const leaderboard = users.map((user, index) => ({
-      rank: index + 1,
-      username: user.username,
-      role: user.role,
-      country: user.profile.country,
-      totalScore: user.stats.totalScore,
-      averageScore: user.stats.averageScore,
-      totalQuizzes: user.stats.totalQuizzes,
-      correctAnswers: user.stats.correctAnswers
-    }));
+    // Calculate ranks with tie handling
+    let currentRank = 1;
+    const leaderboard = users.map((user, index) => {
+      // Check if this user has same score as previous user
+      if (index > 0) {
+        const prevUser = users[index - 1];
+        const sameScore = prevUser.stats.averageScore === user.stats.averageScore &&
+                         prevUser.stats.totalQuizzes === user.stats.totalQuizzes;
+        
+        if (!sameScore) {
+          // Different score, so rank is current position + 1
+          currentRank = index + 1;
+        }
+        // If same score, keep currentRank (tie)
+      }
+      
+      return {
+        rank: currentRank,
+        username: user.username,
+        role: user.role,
+        country: user.profile.country,
+        totalScore: user.stats.totalScore,
+        averageScore: user.stats.averageScore,
+        totalQuizzes: user.stats.totalQuizzes,
+        correctAnswers: user.stats.correctAnswers
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -112,19 +129,36 @@ exports.getCategoryLeaderboard = async (req, res, next) => {
     })
     .slice(0, parsedLimit);
 
-    const leaderboard = enrichedUsers.map((item, index) => ({
-      rank: index + 1,
-      username: item.user.username,
-      role: item.user.role,
-      country: item.user.profile.country,
-      categoryScore: item.categoryScore,
-      categoryQuestions: item.categoryQuestions,
-      categoryCorrect: item.categoryCorrect,
-      totalScore: item.user.stats.totalScore,
-      averageScore: item.user.stats.averageScore,
-      totalQuizzes: item.user.stats.totalQuizzes,
-      correctAnswers: item.user.stats.correctAnswers
-    }));
+    // Calculate ranks with tie handling
+    let currentRank = 1;
+    const leaderboard = enrichedUsers.map((item, index) => {
+      // Check if this user has same score as previous user
+      if (index > 0) {
+        const prevItem = enrichedUsers[index - 1];
+        const sameScore = prevItem.categoryScore === item.categoryScore &&
+                         prevItem.categoryQuestions === item.categoryQuestions;
+        
+        if (!sameScore) {
+          // Different score, so rank is current position + 1
+          currentRank = index + 1;
+        }
+        // If same score, keep currentRank (tie)
+      }
+      
+      return {
+        rank: currentRank,
+        username: item.user.username,
+        role: item.user.role,
+        country: item.user.profile.country,
+        categoryScore: item.categoryScore,
+        categoryQuestions: item.categoryQuestions,
+        categoryCorrect: item.categoryCorrect,
+        totalScore: item.user.stats.totalScore,
+        averageScore: item.user.stats.averageScore,
+        totalQuizzes: item.user.stats.totalQuizzes,
+        correctAnswers: item.user.stats.correctAnswers
+      };
+    });
 
     res.status(200).json({
       success: true,

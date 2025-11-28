@@ -167,14 +167,14 @@ export default function Leaderboard() {
                 <div
                   key={entry.username || idx}
                   className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                    idx < 3 ? 'bg-accent/50' : 'hover:bg-accent'
+                    entry.rank <= 3 ? 'bg-accent/50' : 'hover:bg-accent'
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10">
-                      {getRankIcon(idx + 1) || (
+                      {getRankIcon(entry.rank) || (
                         <span className="text-lg font-bold text-muted-foreground">
-                          #{idx + 1}
+                          #{entry.rank}
                         </span>
                       )}
                     </div>
