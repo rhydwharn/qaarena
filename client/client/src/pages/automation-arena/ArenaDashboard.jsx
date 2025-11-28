@@ -28,7 +28,7 @@ export default function ArenaDashboard() {
   const handleLogout = () => {
     localStorage.removeItem('arena_auth_token');
     localStorage.removeItem('arena_user');
-    navigate('/arena/signin');
+    navigate('/');
   };
 
   const simulators = [

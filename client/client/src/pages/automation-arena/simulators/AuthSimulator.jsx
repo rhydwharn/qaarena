@@ -12,6 +12,8 @@ export default function AuthSimulator() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [view, setView] = useState('intro');
+  const [mode, setMode] = useState(null); // null until detected, then 'demo' or 'real'
+  const [mainAppUser, setMainAppUser] = useState(null); // Store main app user info
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -24,6 +26,42 @@ export default function AuthSimulator() {
   const [loading, setLoading] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [message, setMessage] = useState('');
+
+  // Check if user is logged in from main app on mount
+  useEffect(() => {
+    const mainAppToken = localStorage.getItem('token'); // Main app token
+    const mainAppUserStr = localStorage.getItem('user'); // Main app user
+    
+    console.log('🔍 Auth Simulator Mode Detection:');
+    console.log('  Main App Token:', mainAppToken ? '✅ Found' : '❌ Not found');
+    console.log('  Main App User:', mainAppUserStr ? '✅ Found' : '❌ Not found');
+    
+    if (mainAppToken && mainAppUserStr) {
+      // User is logged in from main app - use real mode
+      console.log('  Mode: REAL ✅');
+      setMode('real');
+      
+      // Parse and store user data
+      try {
+        const userData = JSON.parse(mainAppUserStr);
+        setMainAppUser(userData);
+        console.log('  User:', userData.username || userData.email);
+      } catch (error) {
+        console.error('  Error parsing user data:', error);
+      }
+      
+      // Check if they already have a simulator session
+      const simToken = localStorage.getItem('arena_sim_token');
+      if (simToken) {
+        console.log('  Existing simulator session found - going to dashboard');
+        setView('dashboard');
+      }
+    } else {
+      // User not logged in - use demo mode
+      console.log('  Mode: DEMO 🎭');
+      setMode('demo');
+    }
+  }, []);
 
   // Check for verification token in URL
   useEffect(() => {
@@ -245,6 +283,18 @@ export default function AuthSimulator() {
     }
   };
 
+  // Show loading while detecting mode
+  if (mode === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading simulator...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Intro View
   if (view === 'intro') {
     return (
@@ -268,11 +318,36 @@ export default function AuthSimulator() {
                 🔐 Authentication Simulator
               </CardTitle>
               <CardDescription className="text-lg" data-cy="auth-sim-description">
-                Learn to test complete authentication flows with real email verification
+                {mode === 'real' 
+                  ? 'Test complete authentication flows with real email verification' 
+                  : 'Learn to test authentication flows (Demo Mode - requires login for real emails)'}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
+                {mode === 'demo' && (
+                  <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-md">
+                    <h3 className="font-semibold text-yellow-900 mb-2">ℹ️ Demo Mode</h3>
+                    <p className="text-sm text-yellow-800 mb-2">
+                      You're in demo mode. Sign up and sign in work, but emails won't be sent to real inboxes.
+                    </p>
+                    <p className="text-sm text-yellow-800">
+                      <strong>Want real emails?</strong> Please <Link to="/login" className="underline font-semibold">login</Link> to your account first, then access this simulator.
+                    </p>
+                  </div>
+                )}
+                
+                {mode === 'real' && (
+                  <div className="p-4 bg-green-50 border-2 border-green-300 rounded-md">
+                    <h3 className="font-semibold text-green-900 mb-2">
+                      ✅ Real Mode {mainAppUser && `- Welcome, ${mainAppUser.username || mainAppUser.name || mainAppUser.email}!`}
+                    </h3>
+                    <p className="text-sm text-green-800">
+                      You're logged in! Emails will be sent to real inboxes using the configured email service.
+                    </p>
+                  </div>
+                )}
+
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
                   <h3 className="font-semibold text-blue-900 mb-2">🎯 What You'll Learn:</h3>
                   <ul className="space-y-2 text-sm text-blue-800">
@@ -876,7 +951,18 @@ export default function AuthSimulator() {
                   </div>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-3">
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      localStorage.removeItem('arena_sim_token');
+                      localStorage.removeItem('arena_sim_user');
+                      navigate('/');
+                    }}
+                    data-cy="auth-sim-logout"
+                  >
+                    Logout
+                  </Button>
                   <Button 
                     className="flex-1" 
                     onClick={() => {

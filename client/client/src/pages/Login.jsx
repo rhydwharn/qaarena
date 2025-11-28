@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { BookOpen, AlertCircle } from 'lucide-react';
+import { BookOpen, AlertCircle, Home, ArrowLeft } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -31,17 +31,53 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100 p-4" data-cy="login-page">
-      <Card className="w-full max-w-md" data-cy="login-card">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-primary rounded-full">
-              <BookOpen className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-100" data-cy="login-page">
+      {/* Navigation Bar */}
+      <nav className="border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            <Link to="/" className="flex items-center gap-2 font-bold text-lg">
+              <img src="/web_logo.png" alt="App logo" className="h-6 w-6 object-contain" />
+              <span>QA ARENA</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <Link to="/">
+                <Button variant="ghost" size="sm">
+                  <Home className="h-4 w-4 mr-2" />
+                  Home
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button variant="default" size="sm">
+                  Sign Up
+                </Button>
+              </Link>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your QA ARENA account</CardDescription>
-        </CardHeader>
+        </div>
+      </nav>
+
+      {/* Login Form */}
+      <div className="flex items-center justify-center p-4 pt-20">
+        <Card className="w-full max-w-md" data-cy="login-card">
+          <CardHeader className="space-y-1">
+            {/* Back to Home Button */}
+            <div className="flex justify-start mb-2">
+              <Link to="/">
+                <Button variant="ghost" size="sm" className="text-muted-foreground">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Home
+                </Button>
+              </Link>
+            </div>
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-primary rounded-full">
+                <BookOpen className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
+            <CardDescription className="text-center">Sign in to your QA ARENA account</CardDescription>
+          </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4" data-cy="login-form">
             {error && (
@@ -90,6 +126,7 @@ export default function Login() {
           </div> */}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

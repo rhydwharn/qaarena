@@ -47,9 +47,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear main app tokens
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    
+    // Clear simulator tokens
+    localStorage.removeItem('arena_sim_token');
+    localStorage.removeItem('arena_sim_user');
+    
+    // Clear any other arena-related tokens
+    localStorage.removeItem('arena_auth_token');
+    localStorage.removeItem('arena_user');
+    
+    // Clear user state
     setUser(null);
+    
+    console.log('✅ Logout complete - all session data cleared');
   };
 
   return (
