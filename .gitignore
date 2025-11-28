@@ -121,3 +121,4 @@ SENDGRID_SETUP_GUIDE.md
 FIX_*.md
 scripts/setupEtherealEmail.js
 scripts/testEmail.js
+TOKEN_EXPIRATION_IMPLEMENTATION.md

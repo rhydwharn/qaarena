@@ -33,6 +33,47 @@ export default function AuthSimulator() {
     }
   }, [searchParams]);
 
+  // Check token validity on dashboard view
+  useEffect(() => {
+    const checkTokenValidity = async () => {
+      if (view === 'dashboard') {
+        const token = localStorage.getItem('arena_sim_token');
+        if (!token) {
+          // No token, redirect to intro
+          setView('intro');
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/arena-auth/verify-user`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || data.expired) {
+            // Token expired or invalid
+            localStorage.removeItem('arena_sim_token');
+            localStorage.removeItem('arena_sim_user');
+            
+            // Redirect to main homepage
+            navigate('/');
+          }
+        } catch (error) {
+          console.error('Token verification error:', error);
+          // On error, clear token and redirect
+          localStorage.removeItem('arena_sim_token');
+          localStorage.removeItem('arena_sim_user');
+          navigate('/');
+        }
+      }
+    };
+
+    checkTokenValidity();
+  }, [view, navigate]);
+
   const validateSignUp = () => {
     const newErrors = {};
     
