@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "test": "jest --coverage --detectOpenHandles",
     "test:watch": "source /home/korrektt/nodevenv/qaarena/24/bin/activate && cd /home/korrektt/qaarena",
-    "seed": "node scripts/seedDatabase.js"
+    "seed": "node scripts/seedDatabase.js",
+    "setup-email": "node scripts/setupEtherealEmail.js"
   },
   "keywords": [
     "istqb",
@@ -32,6 +33,7 @@
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
+    "nodemailer": "^7.0.11",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

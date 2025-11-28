@@ -1,37 +1,26 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { ArrowLeft, Mail, Lock, User, CheckCircle, AlertCircle, Loader2, Key, Link as LinkIcon } from 'lucide-react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+import { ArrowLeft, Mail, Lock, User, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function AuthSimulator() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [view, setView] = useState('intro');
+  const [view, setView] = useState('intro'); // intro, signup, signin, verify-otp, verify-token, success, dashboard
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
-    authMode: 'otp'
+    authMode: 'otp' // 'otp' or 'token'
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationCode, setVerificationCode] = useState(''); // For OTP or Token
   const [message, setMessage] = useState('');
-
-  // Check for verification token in URL
-  useEffect(() => {
-    const token = searchParams.get('verify');
-    if (token) {
-      handleVerifyToken(token);
-    }
-  }, [searchParams]);
+  const [authToken, setAuthToken] = useState(''); // Store token from email link
 
   const validateSignUp = () => {
     const newErrors = {};
@@ -62,10 +51,10 @@ export default function AuthSimulator() {
     if (!validateSignUp()) return;
 
     setLoading(true);
-    setErrors({});
+    setMessage('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/arena-auth/signup`, {
+      const response = await fetch('/api/arena-auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -80,12 +69,7 @@ export default function AuthSimulator() {
       const data = await response.json();
 
       if (response.ok) {
-        // Show success message if OTP was resent
-        if (data.resent) {
-          setMessage(data.message);
-        }
-        
-        // Route to appropriate verification screen
+        // Route to appropriate verification screen based on auth mode
         if (formData.authMode === 'otp') {
           setView('verify-otp');
         } else {
@@ -94,7 +78,7 @@ export default function AuthSimulator() {
       } else {
         setErrors({ submit: data.message || 'Sign up failed' });
       }
-    } catch {
+    } catch (error) {
       setErrors({ submit: 'Network error. Please try again.' });
     } finally {
       setLoading(false);
@@ -113,7 +97,7 @@ export default function AuthSimulator() {
     setErrors({});
 
     try {
-      const response = await fetch(`${API_BASE_URL}/arena-auth/verify-otp`, {
+      const response = await fetch('/api/arena-auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -125,13 +109,11 @@ export default function AuthSimulator() {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('arena_sim_token', data.token);
-        localStorage.setItem('arena_sim_user', JSON.stringify(data.user));
         setView('success');
       } else {
         setErrors({ code: data.message || 'Invalid or expired OTP' });
       }
-    } catch {
+    } catch (error) {
       setErrors({ code: 'Network error. Please try again.' });
     } finally {
       setLoading(false);
@@ -141,10 +123,9 @@ export default function AuthSimulator() {
   const handleVerifyToken = async (token) => {
     setLoading(true);
     setErrors({});
-    setView('verifying');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/arena-auth/verify-token`, {
+      const response = await fetch('/api/arena-auth/verify-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
@@ -153,16 +134,15 @@ export default function AuthSimulator() {
       const data = await response.json();
 
       if (response.ok) {
+        // Store auth token and go to dashboard
         localStorage.setItem('arena_sim_token', data.token);
         localStorage.setItem('arena_sim_user', JSON.stringify(data.user));
         setView('dashboard');
       } else {
         setErrors({ token: data.message || 'Invalid or expired token' });
-        setView('intro');
       }
-    } catch {
+    } catch (error) {
       setErrors({ token: 'Network error. Please try again.' });
-      setView('intro');
     } finally {
       setLoading(false);
     }
@@ -179,7 +159,7 @@ export default function AuthSimulator() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/arena-auth/signin`, {
+      const response = await fetch('/api/arena-auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -197,7 +177,7 @@ export default function AuthSimulator() {
       } else {
         setErrors({ submit: data.message || 'Sign in failed' });
       }
-    } catch {
+    } catch (error) {
       setErrors({ submit: 'Network error. Please try again.' });
     } finally {
       setLoading(false);
@@ -236,25 +216,31 @@ export default function AuthSimulator() {
                   <h3 className="font-semibold text-blue-900 mb-2">🎯 What You'll Learn:</h3>
                   <ul className="space-y-2 text-sm text-blue-800">
                     <li>✅ Test user registration forms with validation</li>
-                    <li>✅ Handle email verification workflows (OTP & Token)</li>
-                    <li>✅ Extract and use verification codes from emails</li>
+                    <li>✅ Handle email verification workflows</li>
+                    <li>✅ Extract and use verification tokens from emails</li>
                     <li>✅ Test sign-in functionality</li>
                     <li>✅ Verify authenticated dashboard access</li>
                   </ul>
                 </div>
 
                 <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                  <h3 className="font-semibold text-green-900 mb-2">📧 Two Authentication Modes:</h3>
-                  <div className="space-y-3 text-sm text-green-800">
-                    <div>
-                      <strong>1. OTP (One-Time Password):</strong>
-                      <p>Receive a 6-digit code via email, enter it to verify your account.</p>
-                    </div>
-                    <div>
-                      <strong>2. Authorization Token:</strong>
-                      <p>Click a verification link in your email to auto-verify and login.</p>
-                    </div>
-                  </div>
+                  <h3 className="font-semibold text-green-900 mb-2">📧 Real Email Verification:</h3>
+                  <p className="text-sm text-green-800">
+                    This simulator sends <strong>real verification emails</strong> to your inbox. 
+                    You'll practice extracting tokens and completing the verification flow - 
+                    a critical skill for E2E testing!
+                  </p>
+                </div>
+
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <h3 className="font-semibold text-yellow-900 mb-2">🧪 Testing Scenarios:</h3>
+                  <ul className="space-y-1 text-sm text-yellow-800">
+                    <li>• Form validation (required fields, email format, password strength)</li>
+                    <li>• Email delivery verification</li>
+                    <li>• Token extraction and usage</li>
+                    <li>• Expired token handling</li>
+                    <li>• Successful authentication flow</li>
+                  </ul>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4">
@@ -389,26 +375,6 @@ export default function AuthSimulator() {
                   {errors.confirmPassword && <p className="text-sm text-red-600 mt-1" data-cy="auth-sim-confirm-error">{errors.confirmPassword}</p>}
                 </div>
 
-                {/* Authentication Mode Selector */}
-                <div data-cy="auth-sim-authmode-field">
-                  <Label htmlFor="authMode" data-cy="auth-sim-authmode-label">Authentication Mode</Label>
-                  <select
-                    id="authMode"
-                    value={formData.authMode}
-                    onChange={(e) => setFormData({ ...formData, authMode: e.target.value })}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    data-cy="auth-sim-authmode-select"
-                  >
-                    <option value="otp">OTP (One-Time Password)</option>
-                    <option value="token">Authorization Token (Email Link)</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formData.authMode === 'otp' 
-                      ? '📱 You will receive a 6-digit code via email'
-                      : '🔗 You will receive a clickable verification link via email'}
-                  </p>
-                </div>
-
                 <Button 
                   type="submit" 
                   className="w-full" 
@@ -444,59 +410,53 @@ export default function AuthSimulator() {
     );
   }
 
-  // OTP Verification View
-  if (view === 'verify-otp') {
+  // Email Verification View
+  if (view === 'verify-email') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-6" data-cy="auth-sim-verify-otp-page">
-        <Card className="w-full max-w-md" data-cy="auth-sim-verify-otp-card">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-6" data-cy="auth-sim-verify-page">
+        <Card className="w-full max-w-md" data-cy="auth-sim-verify-card">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <div className="p-4 bg-blue-100 rounded-full">
-                <Key className="h-12 w-12 text-blue-600" />
+                <Mail className="h-12 w-12 text-blue-600" />
               </div>
             </div>
-            <CardTitle className="text-2xl" data-cy="auth-sim-verify-otp-title">
-              Kindly input the OTP sent to your email
+            <CardTitle className="text-2xl" data-cy="auth-sim-verify-title">
+              Check Your Email! 📧
             </CardTitle>
-            <CardDescription data-cy="auth-sim-verify-otp-description">
-              We've sent a 6-digit OTP to <strong>{formData.email}</strong>
+            <CardDescription data-cy="auth-sim-verify-description">
+              We've sent a verification email to <strong>{formData.email}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleVerifyOTP} data-cy="auth-sim-verify-otp-form">
+            <form onSubmit={handleVerifyEmail} data-cy="auth-sim-verify-form">
               <div className="space-y-4">
-                {message && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-md" data-cy="auth-sim-resend-message">
-                    <p className="text-sm text-green-700 font-medium">{message}</p>
-                  </div>
-                )}
-
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
                   <h3 className="font-semibold text-yellow-900 mb-2">📝 Instructions:</h3>
                   <ol className="text-sm text-yellow-800 space-y-1 list-decimal list-inside">
                     <li>Open your email inbox</li>
-                    <li>Find the OTP email</li>
-                    <li>Copy the 6-digit code</li>
+                    <li>Find the verification email</li>
+                    <li>Copy the 6-digit verification token</li>
                     <li>Paste it below and click Verify</li>
                   </ol>
                 </div>
 
-                {errors.code && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-md" data-cy="auth-sim-verify-otp-error">
-                    <p className="text-sm text-red-600">{errors.code}</p>
+                {errors.token && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md" data-cy="auth-sim-verify-error">
+                    <p className="text-sm text-red-600">{errors.token}</p>
                   </div>
                 )}
 
-                <div data-cy="auth-sim-otp-field">
-                  <Label htmlFor="otp" data-cy="auth-sim-otp-label">Enter OTP</Label>
+                <div data-cy="auth-sim-token-field">
+                  <Label htmlFor="token" data-cy="auth-sim-token-label">Verification Token</Label>
                   <Input
-                    id="otp"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    placeholder="123456"
+                    id="token"
+                    value={verificationToken}
+                    onChange={(e) => setVerificationToken(e.target.value)}
+                    placeholder="Enter 6-digit token"
                     maxLength={6}
                     className="text-center text-2xl tracking-widest"
-                    data-cy="auth-sim-otp-input"
+                    data-cy="auth-sim-token-input"
                   />
                 </div>
 
@@ -504,7 +464,7 @@ export default function AuthSimulator() {
                   type="submit" 
                   className="w-full" 
                   disabled={loading}
-                  data-cy="auth-sim-verify-otp-submit"
+                  data-cy="auth-sim-verify-submit"
                 >
                   {loading ? (
                     <>
@@ -512,12 +472,12 @@ export default function AuthSimulator() {
                       Verifying...
                     </>
                   ) : (
-                    'Verify OTP'
+                    'Verify Email'
                   )}
                 </Button>
 
                 <p className="text-center text-sm text-gray-600">
-                  Didn't receive the OTP?{' '}
+                  Didn't receive the email?{' '}
                   <button 
                     type="button"
                     onClick={() => setView('signup')} 
@@ -535,77 +495,7 @@ export default function AuthSimulator() {
     );
   }
 
-  // Token Verification View (Waiting for email click)
-  if (view === 'verify-token') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-6" data-cy="auth-sim-verify-token-page">
-        <Card className="w-full max-w-md" data-cy="auth-sim-verify-token-card">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="p-4 bg-green-100 rounded-full">
-                <LinkIcon className="h-12 w-12 text-green-600" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl" data-cy="auth-sim-verify-token-title">
-              Kindly check your email for the authorization token
-            </CardTitle>
-            <CardDescription data-cy="auth-sim-verify-token-description">
-              We've sent a verification link to <strong>{formData.email}</strong>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {message && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-md" data-cy="auth-sim-resend-message">
-                  <p className="text-sm text-green-700 font-medium">{message}</p>
-                </div>
-              )}
-
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-                <h3 className="font-semibold text-blue-900 mb-2">📧 Next Steps:</h3>
-                <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-                  <li>Open your email inbox</li>
-                  <li>Find the verification email</li>
-                  <li>Click the "Verify My Account" button</li>
-                  <li>You'll be automatically logged in!</li>
-                </ol>
-              </div>
-
-              <div className="p-4 bg-green-50 border border-green-200 rounded-md text-center">
-                <p className="text-sm text-green-800">
-                  <strong>✨ Magic Link:</strong> Clicking the link will automatically verify your account and log you into the dashboard!
-                </p>
-              </div>
-
-              <Button 
-                variant="outline"
-                className="w-full" 
-                onClick={() => setView('intro')}
-                data-cy="auth-sim-back-to-intro"
-              >
-                Back to Home
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Verifying Token (Loading state)
-  if (view === 'verifying') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-6" data-cy="auth-sim-verifying-page">
-        <Card className="w-full max-w-md text-center p-8">
-          <Loader2 className="h-16 w-16 animate-spin text-purple-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifying Your Account...</h2>
-          <p className="text-gray-600">Please wait while we verify your authorization token.</p>
-        </Card>
-      </div>
-    );
-  }
-
-  // Success View (After OTP verification)
+  // Success View
   if (view === 'success') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-6" data-cy="auth-sim-success-page">
@@ -628,16 +518,16 @@ export default function AuthSimulator() {
               <div className="p-4 bg-green-50 border border-green-200 rounded-md">
                 <p className="text-sm text-green-800 text-center">
                   Great job! You've successfully completed the email verification flow. 
-                  Now you can access your dashboard.
+                  Now you can sign in to access your dashboard.
                 </p>
               </div>
 
               <Button 
                 className="w-full" 
-                onClick={() => setView('dashboard')}
-                data-cy="auth-sim-goto-dashboard"
+                onClick={() => setView('signin')}
+                data-cy="auth-sim-goto-signin-success"
               >
-                Continue to Dashboard
+                Continue to Sign In
               </Button>
             </div>
           </CardContent>
@@ -777,7 +667,7 @@ export default function AuthSimulator() {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>Received and verified email authentication</span>
+                      <span>Received and verified a real email verification token</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -796,8 +686,7 @@ export default function AuthSimulator() {
                   </h3>
                   <ul className="space-y-2 text-blue-800">
                     <li>• How to automate email verification workflows</li>
-                    <li>• Testing OTP and token-based authentication</li>
-                    <li>• Extracting verification codes from emails</li>
+                    <li>• Extracting tokens from emails for testing</li>
                     <li>• Testing complete authentication flows</li>
                     <li>• Handling form validation and error states</li>
                     <li>• Verifying protected route access</li>
@@ -842,7 +731,7 @@ export default function AuthSimulator() {
                       localStorage.removeItem('arena_sim_token');
                       localStorage.removeItem('arena_sim_user');
                       setView('intro');
-                      setFormData({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '', authMode: 'otp' });
+                      setFormData({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
                     }}
                     data-cy="auth-sim-try-again"
                   >
