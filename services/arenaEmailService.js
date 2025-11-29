@@ -8,6 +8,10 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
+  },
+  tls: {
+    // Don't fail on invalid certificates (needed for shared hosting)
+    rejectUnauthorized: false
   }
 });
 

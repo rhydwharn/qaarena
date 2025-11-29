@@ -71,6 +71,18 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
 
+  // Handle port already in use error
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use. Please kill the existing process or use a different port.`);
+      console.error(`   Run: lsof -ti:${PORT} | xargs kill -9`);
+      process.exit(1);
+    } else {
+      console.error('Server error:', err);
+      process.exit(1);
+    }
+  });
+
   process.on('unhandledRejection', (err) => {
     console.error('Unhandled Rejection:', err);
     server.close(() => process.exit(1));
