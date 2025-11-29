@@ -1,16 +1,31 @@
-const Achievement = require('../models/Achievement');
-const User = require('../models/User');
+// MySQL Models
+const { Achievement, AchievementTranslation, UserAchievement, User } = require('../models/mysql');
+const { Op } = require('sequelize');
 
 exports.getAllAchievements = async (req, res, next) => {
   try {
-    const achievements = await Achievement.find({ isActive: true });
+    const achievements = await Achievement.findAll({
+      where: { isActive: true },
+      include: [{ model: AchievementTranslation, as: 'translations' }]
+    });
 
-    const user = await User.findById(req.user.id).populate('achievements');
-    const unlockedIds = user.achievements.map(a => a._id.toString());
+    const userAchievements = await UserAchievement.findAll({
+      where: { userId: req.user.id },
+      attributes: ['achievementId']
+    });
+    const unlockedIds = userAchievements.map(ua => ua.achievementId);
 
     const achievementsWithStatus = achievements.map(achievement => ({
-      ...achievement.toObject(),
-      unlocked: unlockedIds.includes(achievement._id.toString())
+      id: achievement.id,
+      name: achievement.translations?.find(t => t.language === 'en')?.name || '',
+      description: achievement.translations?.find(t => t.language === 'en')?.description || '',
+      icon: achievement.icon,
+      type: achievement.type,
+      criteriaMetric: achievement.criteriaMetric,
+      criteriaThreshold: achievement.criteriaThreshold,
+      rarity: achievement.rarity,
+      points: achievement.points,
+      unlocked: unlockedIds.includes(achievement.id)
     }));
 
     res.status(200).json({
@@ -24,11 +39,29 @@ exports.getAllAchievements = async (req, res, next) => {
 
 exports.getUserAchievements = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).populate('achievements');
+    const userAchievements = await UserAchievement.findAll({
+      where: { userId: req.user.id },
+      include: [{
+        model: Achievement,
+        as: 'achievement',
+        include: [{ model: AchievementTranslation, as: 'translations' }]
+      }]
+    });
+
+    const achievements = userAchievements.map(ua => ({
+      id: ua.achievement.id,
+      name: ua.achievement.translations?.find(t => t.language === 'en')?.name || '',
+      description: ua.achievement.translations?.find(t => t.language === 'en')?.description || '',
+      icon: ua.achievement.icon,
+      type: ua.achievement.type,
+      rarity: ua.achievement.rarity,
+      points: ua.achievement.points,
+      unlockedAt: ua.unlockedAt
+    }));
 
     res.status(200).json({
       status: 'success',
-      data: { achievements: user.achievements }
+      data: { achievements }
     });
   } catch (error) {
     next(error);
@@ -37,46 +70,59 @@ exports.getUserAchievements = async (req, res, next) => {
 
 exports.checkAchievements = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).populate('achievements');
-    const achievements = await Achievement.find({ isActive: true });
+    const user = await User.findByPk(req.user.id);
+    const achievements = await Achievement.findAll({
+      where: { isActive: true },
+      include: [{ model: AchievementTranslation, as: 'translations' }]
+    });
+
+    const userAchievements = await UserAchievement.findAll({
+      where: { userId: req.user.id },
+      attributes: ['achievementId']
+    });
+    const unlockedIds = userAchievements.map(ua => ua.achievementId);
 
     const newAchievements = [];
 
     for (const achievement of achievements) {
-      const alreadyUnlocked = user.achievements.some(a => a._id.toString() === achievement._id.toString());
+      const alreadyUnlocked = unlockedIds.includes(achievement.id);
 
       if (!alreadyUnlocked) {
         let unlocked = false;
 
-        switch (achievement.criteria.metric) {
+        switch (achievement.criteriaMetric) {
           case 'totalQuizzes':
-            unlocked = user.stats.totalQuizzes >= achievement.criteria.threshold;
+            unlocked = user.totalQuizzes >= achievement.criteriaThreshold;
             break;
           case 'totalScore':
-            unlocked = user.stats.totalScore >= achievement.criteria.threshold;
+            unlocked = user.totalScore >= achievement.criteriaThreshold;
             break;
           case 'averageScore':
-            unlocked = user.stats.averageScore >= achievement.criteria.threshold;
+            unlocked = parseFloat(user.averageScore) >= achievement.criteriaThreshold;
             break;
           case 'streak':
-            unlocked = user.stats.streak >= achievement.criteria.threshold;
+            unlocked = user.streak >= achievement.criteriaThreshold;
             break;
           case 'correctAnswers':
-            unlocked = user.stats.correctAnswers >= achievement.criteria.threshold;
+            unlocked = user.correctAnswers >= achievement.criteriaThreshold;
             break;
         }
 
         if (unlocked) {
-          user.achievements.push(achievement._id);
-          achievement.unlockedBy.push(user._id);
-          await achievement.save();
-          newAchievements.push(achievement);
+          await UserAchievement.create({
+            userId: user.id,
+            achievementId: achievement.id,
+            unlockedAt: new Date()
+          });
+          newAchievements.push({
+            id: achievement.id,
+            name: achievement.translations?.find(t => t.language === 'en')?.name || '',
+            description: achievement.translations?.find(t => t.language === 'en')?.description || '',
+            icon: achievement.icon,
+            points: achievement.points
+          });
         }
       }
-    }
-
-    if (newAchievements.length > 0) {
-      await user.save();
     }
 
     res.status(200).json({

@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Progress = require('../models/Progress');
+// MySQL Models
+const { User, Progress } = require('../models/mysql');
+const { sequelize } = require('../config/mysqlDatabase');
 const ErrorResponse = require('../utils/errorResponse');
+const { Op } = require('sequelize');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -17,7 +19,11 @@ exports.register = async (req, res, next) => {
     const { username, email, password, firstName, lastName, country, preferredLanguage } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await User.findOne({
+      where: {
+        [Op.or]: [{ email }, { username }]
+      }
+    });
     if (existingUser) {
       if (existingUser.email === email) {
         return next(new ErrorResponse('An account with this email already exists', 400));
@@ -27,17 +33,24 @@ exports.register = async (req, res, next) => {
       }
     }
 
-    // Create user
-    const user = await User.create({
-      username,
-      email,
-      password,
-      profile: { firstName, lastName, country, preferredLanguage: preferredLanguage || 'en' }
+    // Create user and progress in a transaction
+    const result = await sequelize.transaction(async (t) => {
+      const user = await User.create({
+        username,
+        email,
+        password,
+        firstName,
+        lastName,
+        country,
+        preferredLanguage: preferredLanguage || 'en'
+      }, { transaction: t });
+
+      await Progress.create({ userId: user.id }, { transaction: t });
+
+      return user;
     });
 
-    await Progress.create({ user: user._id });
-
-    const token = generateToken(user._id);
+    const token = generateToken(result.id);
 
     res.status(201).json({
       status: 'success',
@@ -45,11 +58,14 @@ exports.register = async (req, res, next) => {
       data: {
         token,
         user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          profile: user.profile
+          id: result.id,
+          username: result.username,
+          email: result.email,
+          role: result.role,
+          firstName: result.firstName,
+          lastName: result.lastName,
+          country: result.country,
+          preferredLanguage: result.preferredLanguage
         }
       }
     });
@@ -66,7 +82,7 @@ exports.login = async (req, res, next) => {
       return res.status(400).json({ status: 'error', message: 'Please provide email and password' });
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
       return res.status(401).json({ 
@@ -82,22 +98,30 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    user.lastLogin = Date.now();
+    user.lastLogin = new Date();
     await user.save();
 
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     res.status(200).json({
       status: 'success',
       data: {
         token,
         user: {
-          id: user._id,
+          id: user.id,
           username: user.username,
           email: user.email,
           role: user.role,
-          profile: user.profile,
-          stats: user.stats
+          firstName: user.firstName,
+          lastName: user.lastName,
+          country: user.country,
+          preferredLanguage: user.preferredLanguage,
+          totalQuizzes: user.totalQuizzes,
+          totalQuestions: user.totalQuestions,
+          correctAnswers: user.correctAnswers,
+          totalScore: user.totalScore,
+          averageScore: user.averageScore,
+          streak: user.streak
         }
       }
     });
@@ -108,7 +132,14 @@ exports.login = async (req, res, next) => {
 
 exports.getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).populate('achievements');
+    const { User: UserModel, Achievement, UserAchievement } = require('../models/mysql');
+    const user = await UserModel.findByPk(req.user.id, {
+      include: [{
+        model: Achievement,
+        as: 'achievements',
+        through: { attributes: ['unlockedAt'] }
+      }]
+    });
     res.status(200).json({ status: 'success', data: { user } });
   } catch (error) {
     next(error);
@@ -119,11 +150,18 @@ exports.updateProfile = async (req, res, next) => {
   try {
     const { firstName, lastName, country, preferredLanguage } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { profile: { firstName, lastName, country, preferredLanguage } },
-      { new: true, runValidators: true }
-    );
+    const user = await User.findByPk(req.user.id);
+    
+    if (!user) {
+      return next(new ErrorResponse('User not found', 404));
+    }
+
+    await user.update({
+      firstName,
+      lastName,
+      country,
+      preferredLanguage
+    });
 
     res.status(200).json({ status: 'success', data: { user } });
   } catch (error) {
@@ -135,7 +173,11 @@ exports.changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    const user = await User.findById(req.user.id).select('+password');
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) {
+      return next(new ErrorResponse('User not found', 404));
+    }
 
     if (!(await user.comparePassword(currentPassword))) {
       return res.status(401).json({ status: 'error', message: 'Current password is incorrect' });
@@ -158,7 +200,7 @@ exports.refreshToken = async (req, res, next) => {
     const user = req.user; // From auth middleware
     
     // Generate new token with same expiration as original
-    const newToken = generateToken(user._id);
+    const newToken = generateToken(user.id);
     
     res.status(200).json({
       status: 'success',
@@ -166,11 +208,11 @@ exports.refreshToken = async (req, res, next) => {
       data: {
         token: newToken,
         user: {
-          id: user._id,
+          id: user.id,
           username: user.username,
           email: user.email,
           role: user.role,
-          points: user.points
+          totalScore: user.totalScore
         }
       }
     });
@@ -188,7 +230,7 @@ exports.extendToken = async (req, res, next) => {
     
     // Generate new token with extended expiration (2 hours)
     const extendedToken = jwt.sign(
-      { id: user._id },
+      { id: user.id },
       process.env.JWT_SECRET,
       { expiresIn: '2h' }
     );

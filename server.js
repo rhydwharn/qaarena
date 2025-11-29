@@ -4,7 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
-const connectDB = require('./config/database');
+const { testConnection } = require('./config/mysqlDatabase');
 const errorHandler = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/auth');
@@ -22,7 +22,7 @@ const app = express();
 
 // Only connect to DB if not in test mode (tests handle their own connection)
 if (process.env.NODE_ENV !== 'test') {
-  connectDB();
+  testConnection();
 }
 
 app.use(helmet());

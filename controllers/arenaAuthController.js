@@ -1,7 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const ArenaUser = require('../models/ArenaUser');
+const { ArenaUser } = require('../models/mysql');
+const { Op } = require('sequelize');
 const { sendOTPEmail, sendTokenEmail } = require('../services/arenaEmailService');
 
 /**
@@ -48,7 +49,7 @@ exports.signup = async (req, res) => {
     }
 
     // Check if user exists
-    const existingUser = await ArenaUser.findOne({ email: email.toLowerCase() });
+    const existingUser = await ArenaUser.findOne({ where: { email: email.toLowerCase() } });
     if (existingUser) {
       // If user exists but is not verified, resend verification
       if (!existingUser.isVerified) {
@@ -172,10 +173,12 @@ exports.verifyOTP = async (req, res) => {
 
     // Find user with matching OTP
     const user = await ArenaUser.findOne({
-      email: email.toLowerCase(),
-      verificationOTP: otp,
-      verificationExpiry: { $gt: Date.now() },
-      authMode: 'otp'
+      where: {
+        email: email.toLowerCase(),
+        verificationOTP: otp,
+        verificationExpiry: { [Op.gt]: new Date() },
+        authMode: 'otp'
+      }
     });
 
     if (!user) {
@@ -187,13 +190,13 @@ exports.verifyOTP = async (req, res) => {
 
     // Update user
     user.isVerified = true;
-    user.verificationOTP = undefined;
-    user.verificationExpiry = undefined;
+    user.verificationOTP = null;
+    user.verificationExpiry = null;
     await user.save();
 
     // Generate JWT for login
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user.id, email: user.email },
       process.env.JWT_SECRET || 'arena-secret-key',
       { expiresIn: '7d' }
     );
@@ -203,7 +206,7 @@ exports.verifyOTP = async (req, res) => {
       message: 'OTP verified successfully!',
       token,
       user: {
-        id: user._id,
+        id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email
@@ -234,9 +237,11 @@ exports.verifyToken = async (req, res) => {
 
     // Find user with matching token
     const user = await ArenaUser.findOne({
-      verificationToken: token,
-      verificationExpiry: { $gt: Date.now() },
-      authMode: 'token'
+      where: {
+        verificationToken: token,
+        verificationExpiry: { [Op.gt]: new Date() },
+        authMode: 'token'
+      }
     });
 
     if (!user) {
@@ -248,13 +253,13 @@ exports.verifyToken = async (req, res) => {
 
     // Update user
     user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationExpiry = undefined;
+    user.verificationToken = null;
+    user.verificationExpiry = null;
     await user.save();
 
     // Generate JWT for login
     const jwtToken = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user.id, email: user.email },
       process.env.JWT_SECRET || 'arena-secret-key',
       { expiresIn: '7d' }
     );
@@ -264,7 +269,7 @@ exports.verifyToken = async (req, res) => {
       message: 'Account verified successfully!',
       token: jwtToken,
       user: {
-        id: user._id,
+        id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email
@@ -294,7 +299,7 @@ exports.signin = async (req, res) => {
     }
 
     // Find user
-    const user = await ArenaUser.findOne({ email: email.toLowerCase() });
+    const user = await ArenaUser.findOne({ where: { email: email.toLowerCase() } });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -321,7 +326,7 @@ exports.signin = async (req, res) => {
 
     // Generate JWT
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user.id, email: user.email },
       process.env.JWT_SECRET || 'arena-secret-key',
       { expiresIn: '7d' }
     );
@@ -331,7 +336,7 @@ exports.signin = async (req, res) => {
       message: 'Sign in successful',
       token,
       user: {
-        id: user._id,
+        id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email

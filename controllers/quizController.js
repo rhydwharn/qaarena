@@ -1,9 +1,8 @@
-const Quiz = require('../models/Quiz');
-const Question = require('../models/Question');
-const User = require('../models/User');
-const Progress = require('../models/Progress');
+// MySQL Models
+const { Quiz, QuizQuestion, QuizAnswer, Question, QuestionTranslation, QuestionOption, QuestionOptionTranslation, User, Progress, CategoryProgress, RecentActivity, sequelize } = require('../models/mysql');
 const ErrorResponse = require('../utils/errorResponse');
-const mongoose = require('mongoose');
+const { Op } = require('sequelize');
+const { transformQuestionToAPI } = require('../utils/questionHelpers');
 
 exports.startQuiz = async (req, res, next) => {
   try {
@@ -11,8 +10,10 @@ exports.startQuiz = async (req, res, next) => {
 
     // Check if user has an in-progress quiz
     const existingQuiz = await Quiz.findOne({ 
-      user: req.user.id, 
-      status: 'in-progress' 
+      where: { 
+        userId: req.user.id, 
+        status: 'in-progress' 
+      }
     });
 
     if (existingQuiz) {
@@ -24,11 +25,11 @@ exports.startQuiz = async (req, res, next) => {
       return next(new ErrorResponse('Number of questions must be between 1 and 100', 400));
     }
 
-    const query = { status: 'published' };
-    if (category) query.category = category;
-    if (difficulty) query.difficulty = difficulty;
+    const where = { status: 'published' };
+    if (category) where.category = category;
+    if (difficulty) where.difficulty = difficulty;
 
-    const totalAvailable = await Question.countDocuments(query);
+    const totalAvailable = await Question.count({ where });
     
     if (totalAvailable === 0) {
       return next(new ErrorResponse('No questions available for the selected criteria. Please try different filters.', 404));
@@ -36,58 +37,75 @@ exports.startQuiz = async (req, res, next) => {
 
     const limit = Math.min(numberOfQuestions, totalAvailable);
 
-    // Use $sample with a larger size to account for potential duplicates
-    const sampleSize = Math.min(limit * 2, totalAvailable);
-    const sampledQuestions = await Question.aggregate([
-      { $match: query },
-      { $sample: { size: sampleSize } }
-    ]);
-
-    // Remove duplicates by tracking unique question IDs
-    const uniqueQuestions = [];
-    const seenIds = new Set();
-    
-    for (const question of sampledQuestions) {
-      const questionId = question._id.toString();
-      if (!seenIds.has(questionId)) {
-        seenIds.add(questionId);
-        uniqueQuestions.push(question);
-        if (uniqueQuestions.length === limit) {
-          break;
+    // Get random questions
+    const questions = await Question.findAll({
+      where,
+      order: sequelize.random(),
+      limit,
+      include: [
+        { model: QuestionTranslation, as: 'translations' },
+        { 
+          model: QuestionOption, 
+          as: 'options',
+          include: [{ model: QuestionOptionTranslation, as: 'translations' }]
         }
-      }
-    }
+      ]
+    });
 
-    // If we still don't have enough unique questions, fetch more
-    if (uniqueQuestions.length < limit) {
-      const additionalNeeded = limit - uniqueQuestions.length;
-      const excludeIds = uniqueQuestions.map(q => q._id);
-      
-      const additionalQuestions = await Question.find({
-        ...query,
-        _id: { $nin: excludeIds }
-      }).limit(additionalNeeded);
-      
-      uniqueQuestions.push(...additionalQuestions);
-    }
-
-    if (uniqueQuestions.length === 0) {
+    if (questions.length === 0) {
       return next(new ErrorResponse('Unable to generate quiz. Please try again.', 500));
     }
 
-    const quiz = await Quiz.create({
-      user: req.user.id,
-      mode,
-      questions: uniqueQuestions.map(q => ({ question: q._id })),
-      settings: { language, category, difficulty, numberOfQuestions: uniqueQuestions.length, timeLimit }
+    // Create quiz and questions in transaction
+    const result = await sequelize.transaction(async (t) => {
+      const quiz = await Quiz.create({
+        userId: req.user.id,
+        mode,
+        category,
+        difficulty,
+        numberOfQuestions: questions.length,
+        timeLimit,
+        language,
+        status: 'in-progress'
+      }, { transaction: t });
+
+      // Create quiz questions
+      for (let i = 0; i < questions.length; i++) {
+        await QuizQuestion.create({
+          quizId: quiz.id,
+          questionId: questions[i].id,
+          questionOrder: i
+        }, { transaction: t });
+      }
+
+      return quiz;
     });
 
-    const populatedQuiz = await Quiz.findById(quiz._id).populate('questions.question');
+    // Fetch complete quiz with questions
+    const completeQuiz = await Quiz.findByPk(result.id, {
+      include: [{
+        model: QuizQuestion,
+        as: 'quizQuestions',
+        include: [{
+          model: Question,
+          as: 'question',
+          include: [
+            { model: QuestionTranslation, as: 'translations' },
+            { 
+              model: QuestionOption, 
+              as: 'options',
+              include: [{ model: QuestionOptionTranslation, as: 'translations' }]
+            }
+          ]
+        }],
+        order: [['questionOrder', 'ASC']]
+      }]
+    });
 
     res.status(201).json({
       status: 'success',
       message: 'Quiz started successfully',
-      data: { quiz: populatedQuiz }
+      data: { quiz: completeQuiz }
     });
   } catch (error) {
     next(error);
@@ -103,21 +121,23 @@ exports.answerQuestion = async (req, res, next) => {
       return next(new ErrorResponse('Please provide quizId, questionId, and answer', 400));
     }
 
-    // Validate ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(quizId)) {
-      return next(new ErrorResponse('Invalid quiz ID format', 400));
-    }
-    if (!mongoose.Types.ObjectId.isValid(questionId)) {
-      return next(new ErrorResponse('Invalid question ID format', 400));
-    }
-
-    const quiz = await Quiz.findById(quizId).populate('questions.question');
+    const quiz = await Quiz.findByPk(quizId, {
+      include: [{
+        model: QuizQuestion,
+        as: 'quizQuestions',
+        include: [{
+          model: Question,
+          as: 'question',
+          include: [{ model: QuestionOption, as: 'options' }]
+        }]
+      }]
+    });
 
     if (!quiz) {
       return next(new ErrorResponse('Quiz not found. It may have been deleted or expired.', 404));
     }
 
-    if (quiz.user.toString() !== req.user.id) {
+    if (quiz.userId !== req.user.id) {
       return next(new ErrorResponse('You are not authorized to answer questions in this quiz', 403));
     }
 
@@ -125,30 +145,41 @@ exports.answerQuestion = async (req, res, next) => {
       return next(new ErrorResponse(`This quiz is ${quiz.status}. You can only answer questions in an active quiz.`, 400));
     }
 
-    const questionIndex = quiz.questions.findIndex(q => q.question._id.toString() === questionId);
+    const quizQuestion = quiz.quizQuestions.find(qq => qq.questionId === parseInt(questionId));
 
-    if (questionIndex === -1) {
+    if (!quizQuestion) {
       return next(new ErrorResponse('This question is not part of the current quiz', 404));
     }
 
-    const question = quiz.questions[questionIndex].question;
+    const question = quizQuestion.question;
     const correctAnswers = question.options
-      .map((opt, idx) => opt.isCorrect ? idx : null)
-      .filter(idx => idx !== null);
+      .filter(opt => opt.isCorrect)
+      .map(opt => opt.optionIndex);
 
     const userAnswerArray = Array.isArray(answer) ? answer : [answer];
     const isCorrect = JSON.stringify(userAnswerArray.sort()) === JSON.stringify(correctAnswers.sort());
 
-    quiz.questions[questionIndex].userAnswer = userAnswerArray;
-    quiz.questions[questionIndex].isCorrect = isCorrect;
-    quiz.questions[questionIndex].timeSpent = timeSpent || 0;
-    quiz.questions[questionIndex].answeredAt = Date.now();
+    // Update quiz question
+    quizQuestion.isCorrect = isCorrect;
+    quizQuestion.timeSpent = timeSpent || 0;
+    quizQuestion.answeredAt = new Date();
+    await quizQuestion.save();
 
-    await quiz.save();
+    // Save user answers
+    await QuizAnswer.destroy({ where: { quizQuestionId: quizQuestion.id } });
+    for (const ans of userAnswerArray) {
+      await QuizAnswer.create({
+        quizQuestionId: quizQuestion.id,
+        selectedOption: ans
+      });
+    }
 
     res.status(200).json({
       status: 'success',
-      data: { isCorrect, correctAnswers: question.type === 'single-choice' ? correctAnswers[0] : correctAnswers }
+      data: { 
+        isCorrect, 
+        correctAnswers: question.type === 'single-choice' ? correctAnswers[0] : correctAnswers 
+      }
     });
   } catch (error) {
     next(error);
@@ -157,18 +188,22 @@ exports.answerQuestion = async (req, res, next) => {
 
 exports.completeQuiz = async (req, res, next) => {
   try {
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return next(new ErrorResponse('Invalid quiz ID format', 400));
-    }
-
-    const quiz = await Quiz.findById(req.params.id).populate('questions.question');
+    const quiz = await Quiz.findByPk(req.params.id, {
+      include: [{
+        model: QuizQuestion,
+        as: 'quizQuestions',
+        include: [{
+          model: Question,
+          as: 'question'
+        }]
+      }]
+    });
 
     if (!quiz) {
       return next(new ErrorResponse('Quiz not found. It may have been deleted.', 404));
     }
 
-    if (quiz.user.toString() !== req.user.id) {
+    if (quiz.userId !== req.user.id) {
       return next(new ErrorResponse('You are not authorized to complete this quiz', 403));
     }
 
@@ -176,71 +211,88 @@ exports.completeQuiz = async (req, res, next) => {
       return next(new ErrorResponse('This quiz has already been completed', 400));
     }
 
-    quiz.status = 'completed';
-    quiz.completedAt = Date.now();
-    quiz.totalTime = Math.floor((quiz.completedAt - quiz.startedAt) / 1000);
+    // Calculate score
+    const totalQuestions = quiz.quizQuestions.length;
+    const correctAnswers = quiz.quizQuestions.filter(qq => qq.isCorrect).length;
+    const percentage = Math.round((correctAnswers / totalQuestions) * 100);
 
+    // Update quiz
+    quiz.status = 'completed';
+    quiz.completedAt = new Date();
+    quiz.totalTime = Math.floor((quiz.completedAt - quiz.createdAt) / 1000);
+    quiz.correctAnswers = correctAnswers;
+    quiz.scorePercentage = percentage;
+    quiz.totalScore = correctAnswers * 10; // Assuming 10 points per question
     await quiz.save();
 
-    const user = await User.findById(req.user.id);
-    user.stats.totalQuizzes += 1;
-    user.stats.totalQuestions += quiz.questions.length;
-    user.stats.correctAnswers += quiz.score.correct;
-    user.stats.totalScore += quiz.score.percentage;
+    // Update user stats
+    const user = await User.findByPk(req.user.id);
+    user.totalQuizzes += 1;
+    user.totalQuestions += totalQuestions;
+    user.correctAnswers += correctAnswers;
+    user.totalScore += quiz.totalScore;
     user.updateAverageScore();
     await user.save();
 
-    const progress = await Progress.findOne({ user: req.user.id });
+    // Update progress
+    const progress = await Progress.findOne({ where: { userId: req.user.id } });
     if (progress) {
-      // Only update category progress if a specific category was selected
-      if (quiz.settings.category) {
-        const categoryIndex = progress.categoryProgress.findIndex(cp => cp.category === quiz.settings.category);
-        if (categoryIndex > -1) {
-          progress.categoryProgress[categoryIndex].questionsAttempted += quiz.questions.length;
-          progress.categoryProgress[categoryIndex].questionsCorrect += quiz.score.correct;
-          progress.categoryProgress[categoryIndex].averageScore = Math.round(
-            (progress.categoryProgress[categoryIndex].questionsCorrect / progress.categoryProgress[categoryIndex].questionsAttempted) * 100
+      // Update category progress if specific category
+      if (quiz.category) {
+        let categoryProgress = await CategoryProgress.findOne({
+          where: {
+            progressId: progress.id,
+            category: quiz.category
+          }
+        });
+
+        if (categoryProgress) {
+          categoryProgress.questionsAttempted += totalQuestions;
+          categoryProgress.questionsCorrect += correctAnswers;
+          categoryProgress.averageScore = Math.round(
+            (categoryProgress.questionsCorrect / categoryProgress.questionsAttempted) * 100
           );
-          progress.categoryProgress[categoryIndex].lastAttempted = Date.now();
+          categoryProgress.lastAttempted = new Date();
+          await categoryProgress.save();
         } else {
-          progress.categoryProgress.push({
-            category: quiz.settings.category,
-            questionsAttempted: quiz.questions.length,
-            questionsCorrect: quiz.score.correct,
-            averageScore: Math.round((quiz.score.correct / quiz.questions.length) * 100),
-            lastAttempted: Date.now()
+          await CategoryProgress.create({
+            progressId: progress.id,
+            category: quiz.category,
+            questionsAttempted: totalQuestions,
+            questionsCorrect: correctAnswers,
+            averageScore: percentage,
+            lastAttempted: new Date()
           });
         }
       }
 
-      progress.recentActivity.unshift({
-        date: Date.now(),
-        questionsAnswered: quiz.questions.length,
-        score: quiz.score.percentage,
+      // Add recent activity
+      await RecentActivity.create({
+        progressId: progress.id,
+        activityDate: new Date().toISOString().split('T')[0],
+        questionsAnswered: totalQuestions,
+        score: percentage,
         timeSpent: quiz.totalTime
       });
 
-      if (progress.recentActivity.length > 30) {
-        progress.recentActivity = progress.recentActivity.slice(0, 30);
-      }
-
+      // Update total time
       progress.totalTimeSpent += quiz.totalTime;
-      progress.updateAreas();
       await progress.save();
     }
 
-    for (const q of quiz.questions) {
-      await Question.findByIdAndUpdate(q.question._id, {
-        $inc: {
-          'statistics.timesAnswered': 1,
-          'statistics.timesCorrect': q.isCorrect ? 1 : 0
-        }
-      });
+    // Update question statistics
+    for (const qq of quiz.quizQuestions) {
+      const question = await Question.findByPk(qq.questionId);
+      question.timesAnswered += 1;
+      if (qq.isCorrect) {
+        question.timesCorrect += 1;
+      }
+      await question.save();
     }
 
     res.status(200).json({
       success: true,
-      message: `Quiz completed! You scored ${quiz.score.percentage}% (${quiz.score.correct}/${quiz.questions.length} correct)`,
+      message: `Quiz completed! You scored ${percentage}% (${correctAnswers}/${totalQuestions} correct)`,
       data: { quiz }
     });
   } catch (error) {
@@ -250,20 +302,34 @@ exports.completeQuiz = async (req, res, next) => {
 
 exports.getQuiz = async (req, res, next) => {
   try {
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return next(new ErrorResponse('Invalid quiz ID format', 400));
-    }
-
-    const quiz = await Quiz.findById(req.params.id)
-      .populate('questions.question')
-      .populate('user', 'username');
+    const quiz = await Quiz.findByPk(req.params.id, {
+      include: [
+        {
+          model: QuizQuestion,
+          as: 'quizQuestions',
+          include: [{
+            model: Question,
+            as: 'question',
+            include: [
+              { model: QuestionTranslation, as: 'translations' },
+              { 
+                model: QuestionOption, 
+                as: 'options',
+                include: [{ model: QuestionOptionTranslation, as: 'translations' }]
+              }
+            ]
+          }],
+          order: [['questionOrder', 'ASC']]
+        },
+        { model: User, as: 'user', attributes: ['id', 'username'] }
+      ]
+    });
 
     if (!quiz) {
       return next(new ErrorResponse('Quiz not found. It may have been deleted.', 404));
     }
 
-    if (quiz.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (quiz.userId !== req.user.id && req.user.role !== 'admin') {
       return next(new ErrorResponse('You do not have permission to view this quiz', 403));
     }
 
@@ -280,23 +346,34 @@ exports.getUserQuizzes = async (req, res, next) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
 
-    const query = { user: req.user.id };
-    if (status) query.status = status;
+    const where = { userId: req.user.id };
+    if (status) where.status = status;
 
-    const quizzes = await Quiz.find(query)
-      .populate('questions.question', 'questionText category difficulty')
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort({ createdAt: -1 });
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const count = await Quiz.countDocuments(query);
+    const { count, rows: quizzes } = await Quiz.findAndCountAll({
+      where,
+      include: [{
+        model: QuizQuestion,
+        as: 'quizQuestions',
+        include: [{
+          model: Question,
+          as: 'question',
+          attributes: ['id', 'category', 'difficulty'],
+          include: [{ model: QuestionTranslation, as: 'translations' }]
+        }]
+      }],
+      limit: parseInt(limit),
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
 
     res.status(200).json({
       status: 'success',
       data: {
         quizzes,
-        totalPages: Math.ceil(count / limit),
-        currentPage: page,
+        totalPages: Math.ceil(count / parseInt(limit)),
+        currentPage: parseInt(page),
         total: count
       }
     });
@@ -308,11 +385,29 @@ exports.getUserQuizzes = async (req, res, next) => {
 exports.getInProgressQuiz = async (req, res, next) => {
   try {
     const quiz = await Quiz.findOne({ 
-      user: req.user.id, 
-      status: 'in-progress' 
-    })
-      .populate('questions.question')
-      .sort({ createdAt: -1 });
+      where: { 
+        userId: req.user.id, 
+        status: 'in-progress' 
+      },
+      include: [{
+        model: QuizQuestion,
+        as: 'quizQuestions',
+        include: [{
+          model: Question,
+          as: 'question',
+          include: [
+            { model: QuestionTranslation, as: 'translations' },
+            { 
+              model: QuestionOption, 
+              as: 'options',
+              include: [{ model: QuestionOptionTranslation, as: 'translations' }]
+            }
+          ]
+        }],
+        order: [['questionOrder', 'ASC']]
+      }],
+      order: [['createdAt', 'DESC']]
+    });
 
     res.status(200).json({
       success: true,
@@ -322,3 +417,5 @@ exports.getInProgressQuiz = async (req, res, next) => {
     next(error);
   }
 };
+
+module.exports = exports;

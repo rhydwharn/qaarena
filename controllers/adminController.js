@@ -1,18 +1,16 @@
-const User = require('../models/User');
-const Question = require('../models/Question');
-const Quiz = require('../models/Quiz');
-const Achievement = require('../models/Achievement');
+// MySQL Models
+const { User, Question, Quiz, Achievement, AchievementTranslation } = require('../models/mysql');
 const ErrorResponse = require('../utils/errorResponse');
-const mongoose = require('mongoose');
+const { Op } = require('sequelize');
 
 exports.getStats = async (req, res, next) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ isActive: true });
-    const totalQuestions = await Question.countDocuments();
-    const publishedQuestions = await Question.countDocuments({ status: 'published' });
-    const totalQuizzes = await Quiz.countDocuments();
-    const completedQuizzes = await Quiz.countDocuments({ status: 'completed' });
+    const totalUsers = await User.count();
+    const activeUsers = await User.count({ where: { isActive: true } });
+    const totalQuestions = await Question.count();
+    const publishedQuestions = await Question.count({ where: { status: 'published' } });
+    const totalQuizzes = await Quiz.count();
+    const completedQuizzes = await Quiz.count({ where: { status: 'completed' } });
 
     res.status(200).json({
       status: 'success',
@@ -31,17 +29,19 @@ exports.getAllUsers = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, role, isActive } = req.query;
 
-    const query = {};
-    if (role) query.role = role;
-    if (isActive !== undefined) query.isActive = isActive === 'true';
+    const where = {};
+    if (role) where.role = role;
+    if (isActive !== undefined) where.isActive = isActive === 'true';
 
-    const users = await User.find(query)
-      .select('-password')
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort({ createdAt: -1 });
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const count = await User.countDocuments(query);
+    const { count, rows: users } = await User.findAndCountAll({
+      where,
+      attributes: { exclude: ['password'] },
+      limit: parseInt(limit),
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
 
     res.status(200).json({
       status: 'success',
@@ -71,24 +71,18 @@ exports.updateUserRole = async (req, res, next) => {
       return next(new ErrorResponse(`Invalid role. Must be one of: ${validRoles.join(', ')}`, 400));
     }
 
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return next(new ErrorResponse('Invalid user ID format', 400));
-    }
-
-    const user = await User.findById(req.params.id);
+    const user = await User.findByPk(req.params.id);
 
     if (!user) {
       return next(new ErrorResponse('User not found. Please check the user ID and try again.', 404));
     }
 
     // Prevent self-role modification
-    if (user._id.toString() === req.user.id) {
+    if (user.id === req.user.id) {
       return next(new ErrorResponse('You cannot modify your own role', 403));
     }
 
-    user.role = role;
-    await user.save();
+    await user.update({ role });
 
     res.status(200).json({
       success: true,
@@ -102,24 +96,18 @@ exports.updateUserRole = async (req, res, next) => {
 
 exports.deactivateUser = async (req, res, next) => {
   try {
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return next(new ErrorResponse('Invalid user ID format', 400));
-    }
-
-    const user = await User.findById(req.params.id);
+    const user = await User.findByPk(req.params.id);
 
     if (!user) {
       return next(new ErrorResponse('User not found. Please check the user ID and try again.', 404));
     }
 
     // Prevent self-deactivation
-    if (user._id.toString() === req.user.id) {
+    if (user.id === req.user.id) {
       return next(new ErrorResponse('You cannot deactivate your own account', 403));
     }
 
-    user.isActive = false;
-    await user.save();
+    await user.update({ isActive: false });
 
     res.status(200).json({
       success: true,
@@ -132,9 +120,10 @@ exports.deactivateUser = async (req, res, next) => {
 
 exports.getFlaggedQuestions = async (req, res, next) => {
   try {
-    const questions = await Question.find({ status: 'flagged' })
-      .populate('createdBy', 'username')
-      .populate('flags.user', 'username');
+    const questions = await Question.findAll({
+      where: { status: 'flagged' },
+      include: [{ model: User, as: 'creator', attributes: ['id', 'username'] }]
+    });
 
     res.status(200).json({
       status: 'success',
@@ -159,20 +148,13 @@ exports.reviewQuestion = async (req, res, next) => {
       return next(new ErrorResponse(`Invalid status. Must be one of: ${validStatuses.join(', ')}`, 400));
     }
 
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return next(new ErrorResponse('Invalid question ID format', 400));
-    }
-
-    const question = await Question.findById(req.params.id);
+    const question = await Question.findByPk(req.params.id);
 
     if (!question) {
       return next(new ErrorResponse('Question not found. It may have been deleted.', 404));
     }
 
-    question.status = status;
-    question.flags = [];
-    await question.save();
+    await question.update({ status });
 
     res.status(200).json({
       success: true,
@@ -193,7 +175,28 @@ exports.createAchievement = async (req, res, next) => {
       return next(new ErrorResponse('Please provide name, description, and criteria for the achievement', 400));
     }
 
-    const achievement = await Achievement.create(req.body);
+    // Create achievement with translations
+    const achievement = await Achievement.create({
+      icon: req.body.icon,
+      type: req.body.type,
+      criteriaMetric: req.body.criteria?.metric || 'totalScore',
+      criteriaThreshold: req.body.criteria?.threshold || 0,
+      rarity: req.body.rarity,
+      points: req.body.points || 0,
+      isActive: req.body.isActive !== false
+    });
+
+    // Create translations if provided
+    if (req.body.name && typeof req.body.name === 'object') {
+      for (const [lang, nameText] of Object.entries(req.body.name)) {
+        await AchievementTranslation.create({
+          achievementId: achievement.id,
+          language: lang,
+          name: nameText,
+          description: req.body.description?.[lang] || ''
+        });
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -207,19 +210,26 @@ exports.createAchievement = async (req, res, next) => {
 
 exports.updateAchievement = async (req, res, next) => {
   try {
-    const achievement = await Achievement.findById(req.params.id);
+    const achievement = await Achievement.findByPk(req.params.id);
     
     if (!achievement) {
       return next(new ErrorResponse(`Achievement not found with id of ${req.params.id}`, 404));
     }
 
-    Object.assign(achievement, req.body);
-    await achievement.save();
+    await achievement.update({
+      icon: req.body.icon || achievement.icon,
+      type: req.body.type || achievement.type,
+      criteriaMetric: req.body.criteria?.metric || achievement.criteriaMetric,
+      criteriaThreshold: req.body.criteria?.threshold || achievement.criteriaThreshold,
+      rarity: req.body.rarity || achievement.rarity,
+      points: req.body.points || achievement.points,
+      isActive: req.body.isActive !== undefined ? req.body.isActive : achievement.isActive
+    });
 
     res.status(200).json({
       success: true,
       data: achievement,
-      message: `Successfully updated achievement ${achievement._id}`
+      message: `Successfully updated achievement ${achievement.id}`
     });
   } catch (err) {
     next(err);
@@ -228,18 +238,13 @@ exports.updateAchievement = async (req, res, next) => {
 
 exports.deleteAchievement = async (req, res, next) => {
   try {
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return next(new ErrorResponse('Invalid achievement ID format', 400));
-    }
-
-    const achievement = await Achievement.findById(req.params.id);
+    const achievement = await Achievement.findByPk(req.params.id);
 
     if (!achievement) {
       return next(new ErrorResponse('Achievement not found. It may have been already deleted.', 404));
     }
 
-    await achievement.deleteOne();
+    await achievement.destroy();
 
     res.status(200).json({
       success: true,

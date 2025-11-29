@@ -1,14 +1,23 @@
-const Progress = require('../models/Progress');
-const User = require('../models/User');
+// MySQL Models
+const { Progress, CategoryProgress, DifficultyProgress, RecentActivity, User } = require('../models/mysql');
+const { sequelize } = require('../config/mysqlDatabase');
 const ErrorResponse = require('../utils/errorResponse');
+const { Op } = require('sequelize');
 
 exports.getProgress = async (req, res, next) => {
   try {
-    let progress = await Progress.findOne({ user: req.user.id });
+    let progress = await Progress.findOne({ 
+      where: { userId: req.user.id },
+      include: [
+        { model: CategoryProgress, as: 'categoryProgress' },
+        { model: DifficultyProgress, as: 'difficultyProgress' },
+        { model: RecentActivity, as: 'recentActivity', limit: 10, order: [['activityDate', 'DESC']] }
+      ]
+    });
 
     if (!progress) {
       // Create initial progress if it doesn't exist
-      progress = await Progress.create({ user: req.user.id });
+      progress = await Progress.create({ userId: req.user.id });
     }
 
     res.status(200).json({ 
@@ -22,17 +31,22 @@ exports.getProgress = async (req, res, next) => {
 
 exports.getCategoryProgress = async (req, res, next) => {
   try {
-    let progress = await Progress.findOne({ user: req.user.id });
+    let progress = await Progress.findOne({ 
+      where: { userId: req.user.id },
+      include: [{ model: CategoryProgress, as: 'categoryProgress' }]
+    });
 
     if (!progress) {
       // Create initial progress if it doesn't exist
-      progress = await Progress.create({ user: req.user.id });
+      progress = await Progress.create({ userId: req.user.id });
     }
+
+    const categoryProgress = progress.categoryProgress || [];
 
     res.status(200).json({
       success: true,
-      message: progress.categoryProgress.length > 0 ? 'Category progress retrieved successfully' : 'No category progress yet. Start taking quizzes to track your progress!',
-      data: { categoryProgress: progress.categoryProgress }
+      message: categoryProgress.length > 0 ? 'Category progress retrieved successfully' : 'No category progress yet. Start taking quizzes to track your progress!',
+      data: { categoryProgress }
     });
   } catch (error) {
     next(error);
@@ -41,22 +55,42 @@ exports.getCategoryProgress = async (req, res, next) => {
 
 exports.getWeakAreas = async (req, res, next) => {
   try {
-    let progress = await Progress.findOne({ user: req.user.id });
+    let progress = await Progress.findOne({ 
+      where: { userId: req.user.id },
+      include: [{ model: CategoryProgress, as: 'categoryProgress' }]
+    });
 
     if (!progress) {
       // Create initial progress if it doesn't exist
-      progress = await Progress.create({ user: req.user.id });
+      progress = await Progress.create({ userId: req.user.id });
     }
 
-    progress.updateAreas();
-    await progress.save();
+    // Calculate weak and strong areas from category progress
+    const categoryProgress = progress.categoryProgress || [];
+    
+    const weakAreas = categoryProgress
+      .filter(cp => cp.averageScore < 60 && cp.questionsAttempted >= 5)
+      .map(cp => ({ 
+        category: cp.category, 
+        successRate: cp.averageScore, 
+        needsImprovement: true 
+      }))
+      .sort((a, b) => a.successRate - b.successRate);
 
-    const hasData = progress.weakAreas.length > 0 || progress.strongAreas.length > 0;
+    const strongAreas = categoryProgress
+      .filter(cp => cp.averageScore >= 80 && cp.questionsAttempted >= 5)
+      .map(cp => ({ 
+        category: cp.category, 
+        successRate: cp.averageScore 
+      }))
+      .sort((a, b) => b.successRate - a.successRate);
+
+    const hasData = weakAreas.length > 0 || strongAreas.length > 0;
 
     res.status(200).json({
       success: true,
       message: hasData ? 'Areas analysis retrieved successfully' : 'Complete more quizzes to get personalized weak and strong areas analysis',
-      data: { weakAreas: progress.weakAreas, strongAreas: progress.strongAreas }
+      data: { weakAreas, strongAreas }
     });
   } catch (error) {
     next(error);
@@ -65,17 +99,17 @@ exports.getWeakAreas = async (req, res, next) => {
 
 exports.getStudyStreak = async (req, res, next) => {
   try {
-    let progress = await Progress.findOne({ user: req.user.id });
+    let progress = await Progress.findOne({ where: { userId: req.user.id } });
 
     if (!progress) {
       // Create initial progress if it doesn't exist
-      progress = await Progress.create({ user: req.user.id });
+      progress = await Progress.create({ userId: req.user.id });
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const lastStudy = progress.studyStreak.lastStudyDate;
+    const lastStudy = progress.lastStudyDate;
     if (lastStudy) {
       const lastStudyDate = new Date(lastStudy);
       lastStudyDate.setHours(0, 0, 0, 0);
@@ -85,28 +119,34 @@ exports.getStudyStreak = async (req, res, next) => {
       if (daysDiff === 0) {
         // Already studied today
       } else if (daysDiff === 1) {
-        progress.studyStreak.current += 1;
-        if (progress.studyStreak.current > progress.studyStreak.longest) {
-          progress.studyStreak.longest = progress.studyStreak.current;
+        progress.currentStreak += 1;
+        if (progress.currentStreak > progress.longestStreak) {
+          progress.longestStreak = progress.currentStreak;
         }
-        progress.studyStreak.lastStudyDate = today;
+        progress.lastStudyDate = today;
         await progress.save();
       } else {
-        progress.studyStreak.current = 1;
-        progress.studyStreak.lastStudyDate = today;
+        progress.currentStreak = 1;
+        progress.lastStudyDate = today;
         await progress.save();
       }
     } else {
-      progress.studyStreak.current = 1;
-      progress.studyStreak.longest = 1;
-      progress.studyStreak.lastStudyDate = today;
+      progress.currentStreak = 1;
+      progress.longestStreak = 1;
+      progress.lastStudyDate = today;
       await progress.save();
     }
 
+    const studyStreak = {
+      current: progress.currentStreak,
+      longest: progress.longestStreak,
+      lastStudyDate: progress.lastStudyDate
+    };
+
     res.status(200).json({
       success: true,
-      message: progress.studyStreak.current > 0 ? `Great! You're on a ${progress.studyStreak.current}-day streak!` : 'Start studying today to begin your streak!',
-      data: { studyStreak: progress.studyStreak }
+      message: progress.currentStreak > 0 ? `Great! You're on a ${progress.currentStreak}-day streak!` : 'Start studying today to begin your streak!',
+      data: { studyStreak }
     });
   } catch (error) {
     next(error);
@@ -115,14 +155,22 @@ exports.getStudyStreak = async (req, res, next) => {
 
 exports.getRecentActivity = async (req, res, next) => {
   try {
-    let progress = await Progress.findOne({ user: req.user.id });
+    let progress = await Progress.findOne({ 
+      where: { userId: req.user.id },
+      include: [{
+        model: RecentActivity,
+        as: 'recentActivity',
+        limit: 10,
+        order: [['activityDate', 'DESC']]
+      }]
+    });
 
     if (!progress) {
       // Create initial progress if it doesn't exist
-      progress = await Progress.create({ user: req.user.id });
+      progress = await Progress.create({ userId: req.user.id });
     }
 
-    const recentActivity = progress.recentActivity.slice(0, 10);
+    const recentActivity = progress.recentActivity || [];
 
     res.status(200).json({
       success: true,

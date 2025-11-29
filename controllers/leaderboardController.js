@@ -1,6 +1,8 @@
-const User = require('../models/User');
-const Progress = require('../models/Progress');
+// MySQL Models
+const { User, Progress, CategoryProgress } = require('../models/mysql');
+const { sequelize } = require('../config/mysqlDatabase');
 const ErrorResponse = require('../utils/errorResponse');
+const { Op } = require('sequelize');
 
 exports.getGlobalLeaderboard = async (req, res, next) => {
   try {
@@ -12,10 +14,18 @@ exports.getGlobalLeaderboard = async (req, res, next) => {
       return next(new ErrorResponse('Limit must be a number between 1 and 100', 400));
     }
 
-    const users = await User.find({ isActive: true, role: { $ne: 'admin' } })
-      .select('username role profile.country stats')
-      .sort({ 'stats.averageScore': -1, 'stats.totalQuizzes': -1 })
-      .limit(parsedLimit);
+    const users = await User.findAll({
+      where: {
+        isActive: true,
+        role: { [Op.ne]: 'admin' }
+      },
+      attributes: ['id', 'username', 'role', 'country', 'totalScore', 'averageScore', 'totalQuizzes', 'correctAnswers'],
+      order: [
+        ['averageScore', 'DESC'],
+        ['totalQuizzes', 'DESC']
+      ],
+      limit: parsedLimit
+    });
 
     if (users.length === 0) {
       return res.status(200).json({
@@ -31,8 +41,8 @@ exports.getGlobalLeaderboard = async (req, res, next) => {
       // Check if this user has same score as previous user
       if (index > 0) {
         const prevUser = users[index - 1];
-        const sameScore = prevUser.stats.averageScore === user.stats.averageScore &&
-                         prevUser.stats.totalQuizzes === user.stats.totalQuizzes;
+        const sameScore = parseFloat(prevUser.averageScore) === parseFloat(user.averageScore) &&
+                         prevUser.totalQuizzes === user.totalQuizzes;
         
         if (!sameScore) {
           // Different score, so rank is current position + 1
@@ -45,11 +55,11 @@ exports.getGlobalLeaderboard = async (req, res, next) => {
         rank: currentRank,
         username: user.username,
         role: user.role,
-        country: user.profile.country,
-        totalScore: user.stats.totalScore,
-        averageScore: user.stats.averageScore,
-        totalQuizzes: user.stats.totalQuizzes,
-        correctAnswers: user.stats.correctAnswers
+        country: user.country,
+        totalScore: user.totalScore,
+        averageScore: parseFloat(user.averageScore),
+        totalQuizzes: user.totalQuizzes,
+        correctAnswers: user.correctAnswers
       };
     });
 
@@ -81,14 +91,18 @@ exports.getCategoryLeaderboard = async (req, res, next) => {
     }
 
     // Get all progress records that have activity in this category
-    const progressRecords = await Progress.find({
-      'categoryProgress': {
-        $elemMatch: {
+    const progressRecords = await Progress.findAll({
+      include: [{
+        model: CategoryProgress,
+        as: 'categoryProgress',
+        where: {
           category: category,
-          questionsAttempted: { $gt: 0 }
-        }
-      }
-    }).select('user categoryProgress');
+          questionsAttempted: { [Op.gt]: 0 }
+        },
+        required: true
+      }],
+      attributes: ['id', 'userId']
+    });
 
     if (progressRecords.length === 0) {
       return res.status(200).json({
@@ -99,23 +113,26 @@ exports.getCategoryLeaderboard = async (req, res, next) => {
     }
 
     // Get user IDs who have taken quizzes in this category
-    const userIds = progressRecords.map(p => p.user);
+    const userIds = progressRecords.map(p => p.userId);
 
     // Get users and populate with their category-specific stats
-    const users = await User.find({ 
-      _id: { $in: userIds },
-      isActive: true, 
-      role: { $ne: 'admin' } 
-    }).select('username role profile.country stats');
+    const users = await User.findAll({ 
+      where: {
+        id: { [Op.in]: userIds },
+        isActive: true, 
+        role: { [Op.ne]: 'admin' }
+      },
+      attributes: ['id', 'username', 'role', 'country', 'totalScore', 'averageScore', 'totalQuizzes', 'correctAnswers']
+    });
 
     // Enrich users with category-specific data and sort
     const enrichedUsers = users.map(user => {
-      const userProgress = progressRecords.find(p => p.user.toString() === user._id.toString());
-      const categoryData = userProgress?.categoryProgress.find(cp => cp.category === category);
+      const userProgress = progressRecords.find(p => p.userId === user.id);
+      const categoryData = userProgress?.categoryProgress?.find(cp => cp.category === category);
       
       return {
         user,
-        categoryScore: categoryData?.averageScore || 0,
+        categoryScore: categoryData ? parseFloat(categoryData.averageScore) : 0,
         categoryQuestions: categoryData?.questionsAttempted || 0,
         categoryCorrect: categoryData?.questionsCorrect || 0
       };
@@ -149,14 +166,14 @@ exports.getCategoryLeaderboard = async (req, res, next) => {
         rank: currentRank,
         username: item.user.username,
         role: item.user.role,
-        country: item.user.profile.country,
+        country: item.user.country,
         categoryScore: item.categoryScore,
         categoryQuestions: item.categoryQuestions,
         categoryCorrect: item.categoryCorrect,
-        totalScore: item.user.stats.totalScore,
-        averageScore: item.user.stats.averageScore,
-        totalQuizzes: item.user.stats.totalQuizzes,
-        correctAnswers: item.user.stats.correctAnswers
+        totalScore: item.user.totalScore,
+        averageScore: parseFloat(item.user.averageScore),
+        totalQuizzes: item.user.totalQuizzes,
+        correctAnswers: item.user.correctAnswers
       };
     });
 
@@ -172,7 +189,7 @@ exports.getCategoryLeaderboard = async (req, res, next) => {
 
 exports.getUserRank = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findByPk(req.user.id);
 
     if (!user) {
       return next(new ErrorResponse('User not found', 404));
@@ -184,30 +201,36 @@ exports.getUserRank = async (req, res, next) => {
         success: true,
         message: 'Admin accounts are not ranked on the leaderboard',
         data: {
-          totalScore: user.stats.totalScore,
-          averageScore: user.stats.averageScore,
+          totalScore: user.totalScore,
+          averageScore: parseFloat(user.averageScore),
           isAdmin: true
         }
       });
     }
 
     // Always exclude admins from ranking
-    const rankQuery = {
-      isActive: true,
-      role: { $ne: 'admin' },
-      $or: [
-        { 'stats.averageScore': { $gt: user.stats.averageScore } },
-        { 
-          'stats.averageScore': user.stats.averageScore,
-          'stats.totalQuizzes': { $gt: user.stats.totalQuizzes }
-        }
-      ]
-    };
+    const usersAhead = await User.count({
+      where: {
+        isActive: true,
+        role: { [Op.ne]: 'admin' },
+        [Op.or]: [
+          { averageScore: { [Op.gt]: user.averageScore } },
+          { 
+            averageScore: user.averageScore,
+            totalQuizzes: { [Op.gt]: user.totalQuizzes }
+          }
+        ]
+      }
+    });
     
-    const totalUsersQuery = { isActive: true, role: { $ne: 'admin' } };
+    const totalUsers = await User.count({
+      where: {
+        isActive: true,
+        role: { [Op.ne]: 'admin' }
+      }
+    });
     
-    const rank = await User.countDocuments(rankQuery) + 1;
-    const totalUsers = await User.countDocuments(totalUsersQuery);
+    const rank = usersAhead + 1;
 
     if (totalUsers === 0) {
       return res.status(200).json({
@@ -226,8 +249,8 @@ exports.getUserRank = async (req, res, next) => {
         rank,
         totalUsers,
         percentile,
-        totalScore: user.stats.totalScore,
-        averageScore: user.stats.averageScore
+        totalScore: user.totalScore,
+        averageScore: parseFloat(user.averageScore)
       }
     });
   } catch (error) {

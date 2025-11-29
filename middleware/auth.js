@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+// MySQL Model
+const { User } = require('../models/mysql');
 
 exports.protect = async (req, res, next) => {
   try {
@@ -14,7 +15,7 @@ exports.protect = async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select('-password');
+      req.user = await User.findByPk(decoded.id);
 
       if (!req.user) {
         return res.status(401).json({ status: 'error', message: 'User not found' });
@@ -55,7 +56,7 @@ exports.optionalAuth = async (req, res, next) => {
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = await User.findById(decoded.id).select('-password');
+        req.user = await User.findByPk(decoded.id);
       } catch (err) {
         req.user = null;
       }

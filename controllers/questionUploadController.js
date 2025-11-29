@@ -1,5 +1,5 @@
 const XLSX = require('xlsx');
-const Question = require('../models/Question');
+const { Question, QuestionTranslation, QuestionOption, QuestionOptionTranslation, QuestionTag, sequelize } = require('../models/mysql');
 const ErrorResponse = require('../utils/errorResponse');
 
 // @desc    Upload questions from Excel file
@@ -110,29 +110,50 @@ exports.uploadQuestionsFromExcel = async (req, res, next) => {
           tags = row.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
         }
 
-        // Create question object matching the Question model
-        const questionData = {
-          questionText: new Map([['en', row.question.trim()]]),
-          type: row.type || 'single-choice',
-          options: optionsArray.map((opt, idx) => ({
-            text: new Map([['en', opt]]),
-            isCorrect: idx === correctAnswerIndex
-          })),
-          category: row.category.trim().toLowerCase(),
-          difficulty: row.difficulty ? row.difficulty.trim().toLowerCase() : 'foundation',
-          tags,
-          points: row.points ? parseInt(row.points) : 1,
-          status: row.status || 'published',
-          createdBy: req.user.id
-        };
+        // Create question with translations in transaction
+        await sequelize.transaction(async (t) => {
+          // Create main question
+          const question = await Question.create({
+            type: row.type || 'single-choice',
+            category: row.category.trim().toLowerCase(),
+            difficulty: row.difficulty ? row.difficulty.trim().toLowerCase() : 'foundation',
+            points: row.points ? parseInt(row.points) : 1,
+            status: row.status || 'published',
+            createdBy: req.user.id
+          }, { transaction: t });
 
-        // Add explanation if provided
-        if (row.explanation) {
-          questionData.explanation = new Map([['en', row.explanation.trim()]]);
-        }
+          // Create question translation
+          await QuestionTranslation.create({
+            questionId: question.id,
+            language: 'en',
+            questionText: row.question.trim(),
+            explanation: row.explanation ? row.explanation.trim() : ''
+          }, { transaction: t });
 
-        // Create question in database
-        await Question.create(questionData);
+          // Create options and translations
+          for (let idx = 0; idx < optionsArray.length; idx++) {
+            const option = await QuestionOption.create({
+              questionId: question.id,
+              optionIndex: idx,
+              isCorrect: idx === correctAnswerIndex
+            }, { transaction: t });
+
+            await QuestionOptionTranslation.create({
+              optionId: option.id,
+              language: 'en',
+              optionText: optionsArray[idx]
+            }, { transaction: t });
+          }
+
+          // Create tags
+          if (tags.length > 0) {
+            await QuestionTag.bulkCreate(
+              tags.map(tag => ({ questionId: question.id, tag })),
+              { transaction: t }
+            );
+          }
+        });
+
         results.successful++;
 
       } catch (error) {
@@ -235,21 +256,19 @@ exports.downloadTemplate = async (req, res, next) => {
 // @access  Private (Admin only)
 exports.getUploadStats = async (req, res, next) => {
   try {
-    const stats = await Question.aggregate([
-      {
-        $group: {
-          _id: '$category',
-          count: { $sum: 1 },
-          avgPoints: { $avg: '$points' }
-        }
-      },
-      {
-        $sort: { count: -1 }
-      }
-    ]);
+    const stats = await Question.findAll({
+      attributes: [
+        'category',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+        [sequelize.fn('AVG', sequelize.col('points')), 'avgPoints']
+      ],
+      group: ['category'],
+      order: [[sequelize.literal('count'), 'DESC']],
+      raw: true
+    });
 
-    const totalQuestions = await Question.countDocuments();
-    const activeQuestions = await Question.countDocuments({ status: 'published' });
+    const totalQuestions = await Question.count();
+    const activeQuestions = await Question.count({ where: { status: 'published' } });
 
     res.status(200).json({
       success: true,
@@ -271,7 +290,11 @@ exports.getUploadStats = async (req, res, next) => {
 // @access  Public
 exports.getCategories = async (req, res, next) => {
   try {
-    const categories = await Question.distinct('category');
+    const results = await Question.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('category')), 'category']],
+      raw: true
+    });
+    const categories = results.map(r => r.category);
     
     res.status(200).json({
       success: true,
