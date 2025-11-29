@@ -15,10 +15,11 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Verify connection
+// Verify connection (non-blocking)
 transporter.verify((error, success) => {
   if (error) {
-    console.error('❌ Email service error:', error);
+    console.warn('⚠️  Email service error (non-critical):', error.message);
+    console.warn('   App will continue without email functionality');
   } else {
     console.log('✅ Email service ready');
     console.log(`📧 Using: ${process.env.SMTP_HOST || 'smtp.ethereal.email'}`);
