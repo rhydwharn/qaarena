@@ -551,7 +551,7 @@ export default function Questions() {
           </Card>
         ) : (
           questions.map((question) => (
-w
+            <Card key={question.id || question._id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
