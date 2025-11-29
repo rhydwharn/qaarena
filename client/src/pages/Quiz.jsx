@@ -19,6 +19,14 @@ export default function Quiz() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // Helper to normalize quiz structure (MySQL vs MongoDB)
+  const getQuizQuestions = (quizData) => {
+    return quizData?.quizQuestions || quizData?.QuizQuestions || quizData?.questions || [];
+  };
+
+  // Computed property for current quiz questions
+  const quizQuestions = quiz ? getQuizQuestions(quiz) : [];
+
   // Helpers to derive selected indices and correctness (robust to backend field names)
   const deriveSelected = (q) => {
     let selected = q.selectedOptions;
@@ -31,8 +39,9 @@ export default function Quiz() {
       else selected = [];
     }
     // Fallback to local state captured during the session if backend doesn't echo selection
-    if ((!selected || selected.length === 0) && q?.question?._id) {
-      const local = selectedAnswers[q.question._id];
+    const questionId = q?.question?.id || q?.question?._id;
+    if ((!selected || selected.length === 0) && questionId) {
+      const local = selectedAnswers[questionId];
       if (Array.isArray(local)) return local;
     }
     return selected || [];
@@ -87,11 +96,12 @@ export default function Quiz() {
       const response = await quizAPI.getById(id);
       const loadedQuiz = response.data.data.quiz;
       
+      const questions = getQuizQuestions(loadedQuiz);
       console.log('Loading quiz:', {
-        id: loadedQuiz._id,
+        id: loadedQuiz.id || loadedQuiz._id,
         status: loadedQuiz.status,
-        totalQuestions: loadedQuiz.questions.length,
-        questionsWithAnswers: loadedQuiz.questions.filter(q => q.userAnswer !== undefined && q.userAnswer !== null).length
+        totalQuestions: questions.length,
+        questionsWithAnswers: questions.filter(q => q.userAnswer !== undefined && q.userAnswer !== null).length
       });
       
       setQuiz(loadedQuiz);
@@ -114,13 +124,14 @@ export default function Quiz() {
   };
 
   const restoreQuizProgress = (loadedQuiz) => {
+    const questions = getQuizQuestions(loadedQuiz);
     // Find the first unanswered question and restore all previous answers
-    let firstUnansweredIndex = loadedQuiz.questions.length; // Default to end if all answered
+    let firstUnansweredIndex = questions.length; // Default to end if all answered
     const restoredAnswers = {};
 
-    for (let i = 0; i < loadedQuiz.questions.length; i++) {
-      const q = loadedQuiz.questions[i];
-      const questionId = q.question._id;
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const questionId = q.question.id || q.question._id;
       
       // Check if question has been answered
       if (q.userAnswer !== undefined && q.userAnswer !== null && 
@@ -129,19 +140,19 @@ export default function Quiz() {
         restoredAnswers[questionId] = Array.isArray(q.userAnswer) ? q.userAnswer : [q.userAnswer];
       } else {
         // This is the first unanswered question
-        if (firstUnansweredIndex === loadedQuiz.questions.length) {
+        if (firstUnansweredIndex === questions.length) {
           firstUnansweredIndex = i;
         }
       }
     }
 
     // If all questions are answered, go to last question
-    if (firstUnansweredIndex === loadedQuiz.questions.length && loadedQuiz.questions.length > 0) {
-      firstUnansweredIndex = loadedQuiz.questions.length - 1;
+    if (firstUnansweredIndex === questions.length && questions.length > 0) {
+      firstUnansweredIndex = questions.length - 1;
     }
 
     console.log('Restoring quiz progress:');
-    console.log('- Total questions:', loadedQuiz.questions.length);
+    console.log('- Total questions:', questions.length);
     console.log('- Answered questions:', Object.keys(restoredAnswers).length);
     console.log('- Resuming at index:', firstUnansweredIndex);
     console.log('- Restored answers:', restoredAnswers);
@@ -154,7 +165,7 @@ export default function Quiz() {
   const handleAnswerSelect = (questionId, optionIndex) => {
     if (submitted) return;
     
-    const question = quiz.questions[currentQuestionIndex];
+    const question = quizQuestions[currentQuestionIndex];
     
     if (question.question.type === 'multiple-choice') {
       // For multiple choice, toggle selection
@@ -170,8 +181,8 @@ export default function Quiz() {
   };
 
   const handleSubmitAnswer = async () => {
-    const question = quiz.questions[currentQuestionIndex];
-    const answer = selectedAnswers[question.question._id];
+    const question = quizQuestions[currentQuestionIndex];
+    const answer = selectedAnswers[question.question._id || question.question.id];
     
     if (!answer || answer.length === 0) {
       alert('Please select an answer before continuing');
@@ -182,7 +193,7 @@ export default function Quiz() {
       // Backend expects 'answer' field, can be array or single value
       const answerData = {
         quizId: id,
-        questionId: question.question._id,
+        questionId: question.question.id || question.question._id,
         answer: question.question.type === 'multiple-choice' ? answer : answer[0],
       };
       
@@ -190,7 +201,7 @@ export default function Quiz() {
       await quizAPI.answer(answerData);
 
       // Move to next question or finish
-      if (currentQuestionIndex < quiz.questions.length - 1) {
+      if (currentQuestionIndex < quizQuestions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
         // All questions answered, complete quiz
@@ -234,7 +245,7 @@ export default function Quiz() {
       payload.difficulty = 'foundation';
 
       const response = await quizAPI.start(payload);
-      navigate(`/quiz/${response.data.data.quiz._id}`);
+      navigate(`/quiz/${response.data.data.quiz.id || response.data.data.quiz._id}`);
     } catch (error) {
       console.error('Failed to start new quiz:', error);
       alert(error.response?.data?.message || 'Failed to start quiz');
@@ -242,17 +253,16 @@ export default function Quiz() {
   };
 
   const calculateResults = (completedQuiz) => {
-    const totalQuestions = completedQuiz.questions.length;
-    const correctAnswers = completedQuiz.questions.reduce((sum, q) => {
-      const selected = deriveSelected(q);
-      return sum + (isSelectionCorrect(q, selected) ? 1 : 0);
-    }, 0);
-    const score = (correctAnswers / totalQuestions) * 100;
+    // Use backend-calculated values (MySQL uses correctCount, percentage, etc.)
+    const totalQuestions = getQuizQuestions(completedQuiz).length;
+    const correctAnswers = completedQuiz.correctCount || completedQuiz.correctAnswers || 0;
+    const incorrectAnswers = completedQuiz.incorrectCount || completedQuiz.incorrectAnswers || 0;
+    const score = completedQuiz.percentage || completedQuiz.scorePercentage || 0;
 
     setResults({
       totalQuestions,
       correctAnswers,
-      incorrectAnswers: totalQuestions - correctAnswers,
+      incorrectAnswers,
       score: score.toFixed(1),
     });
   };
@@ -324,12 +334,12 @@ export default function Quiz() {
             {/* Review Answers */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Review Your Answers</h3>
-              {quiz.questions.map((q, idx) => {
+              {quizQuestions.map((q, idx) => {
                 const selected = deriveSelected(q);
                 const correctNow = isSelectionCorrect(q, selected);
 
                 return (
-                  <Card key={q.question._id} className={correctNow ? 'border-green-200' : 'border-red-200'}>
+                  <Card key={q.question.id || q.question._id} className={correctNow ? 'border-green-200' : 'border-red-200'}>
                     <CardHeader>
                       <div className="flex items-start gap-3">
                         {correctNow ? (
@@ -483,7 +493,7 @@ export default function Quiz() {
         </Card>
       )}
 
-      {quiz && (
+      {quiz && quizQuestions.length > 0 && (
         <>
 
       {/* Progress Header */}
@@ -491,13 +501,13 @@ export default function Quiz() {
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium" data-cy="quiz-progress-text">
-              Question {currentQuestionIndex + 1} of {quiz.questions.length}
+              Question {currentQuestionIndex + 1} of {quizQuestions.length}
             </span>
             <span className="text-sm text-muted-foreground">
               {quiz.category || 'Mixed'} • {quiz.difficulty || 'All Levels'}
             </span>
           </div>
-          <Progress value={((currentQuestionIndex + 1) / (quiz?.questions?.length || 1)) * 100} className="h-2" data-cy="quiz-progress-bar" />
+          <Progress value={((currentQuestionIndex + 1) / (quizQuestions.length || 1)) * 100} className="h-2" data-cy="quiz-progress-bar" />
         </CardContent>
       </Card>
 
@@ -505,23 +515,23 @@ export default function Quiz() {
       <Card data-cy="quiz-question-card">
         <CardHeader>
           <CardTitle className="text-xl" data-cy="quiz-question-text">
-            {quiz.questions[currentQuestionIndex].question.questionText?.en || quiz.questions[currentQuestionIndex].question.questionText}
+            {quizQuestions[currentQuestionIndex]?.question?.questionText?.en || quizQuestions[currentQuestionIndex]?.question?.questionText}
           </CardTitle>
           <CardDescription>
-            {quiz.questions[currentQuestionIndex].question.type === 'multiple-choice'
+            {quizQuestions[currentQuestionIndex].question.type === 'multiple-choice'
               ? 'Select all that apply'
               : 'Select one answer'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {quiz.questions[currentQuestionIndex].question.options?.map((option, idx) => {
-              const isSelected = (selectedAnswers[quiz.questions[currentQuestionIndex].question._id] || []).includes(idx);
+            {quizQuestions[currentQuestionIndex].question.options?.map((option, idx) => {
+              const isSelected = (selectedAnswers[quizQuestions[currentQuestionIndex].question._id || quizQuestions[currentQuestionIndex].question.id] || []).includes(idx);
               
               return (
                 <button
                   key={idx}
-                  onClick={() => handleAnswerSelect(quiz.questions[currentQuestionIndex].question._id, idx)}
+                  onClick={() => handleAnswerSelect(quizQuestions[currentQuestionIndex].question._id || quizQuestions[currentQuestionIndex].question.id, idx)}
                   className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
                     isSelected
                       ? 'border-primary bg-primary/10'
@@ -561,13 +571,13 @@ export default function Quiz() {
             </Button>
             <Button
               onClick={handleSubmitAnswer}
-              disabled={(selectedAnswers[quiz.questions[currentQuestionIndex].question._id] || []).length === 0 || submitting}
+              disabled={(selectedAnswers[quizQuestions[currentQuestionIndex].question._id || quizQuestions[currentQuestionIndex].question.id] || []).length === 0 || submitting}
               className="flex-1"
               data-cy="quiz-submit-answer-button"
             >
               {submitting ? (
                 'Submitting...'
-              ) : currentQuestionIndex === quiz.questions.length - 1 ? (
+              ) : currentQuestionIndex === quizQuestions.length - 1 ? (
                 'Submit Quiz'
               ) : (
                 <>

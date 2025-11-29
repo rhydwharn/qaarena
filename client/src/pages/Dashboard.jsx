@@ -6,7 +6,7 @@ import { Progress } from '../components/ui/progress';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { progressAPI, quizAPI, questionsAPI } from '../services/api';
-import { BookOpen, Trophy, Target, Flame, PlayCircle, Code2, ArrowRight } from 'lucide-react';
+import { BookOpen, Trophy, Target, Flame, PlayCircle, Code2, ArrowRight, XCircle } from 'lucide-react';
 import { getCategories, formatCategoriesForSelect } from '../services/categoryService';
 
 export default function Dashboard() {
@@ -119,6 +119,23 @@ export default function Dashboard() {
     fetchCount();
   }, [category]);
 
+  const handleEndQuiz = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to end the current quiz? All progress will be lost and you can start a fresh quiz.'
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      await quizAPI.complete(inProgressQuiz.id || inProgressQuiz._id);
+      setInProgressQuiz(null);
+      alert('Quiz ended successfully. You can now start a new quiz.');
+    } catch (error) {
+      console.error('Failed to end quiz:', error);
+      alert(error.response?.data?.message || 'Failed to end quiz');
+    }
+  };
+
   const startQuiz = async () => {
     try {
       // Check if there's an in-progress quiz
@@ -127,7 +144,7 @@ export default function Dashboard() {
           'You have an unfinished quiz. Would you like to resume it instead of starting a new one?'
         );
         if (confirmed) {
-          navigate(`/quiz/${inProgressQuiz._id}`);
+          navigate(`/quiz/${inProgressQuiz.id || inProgressQuiz._id}`);
           return;
         } else {
           return; // User chose not to resume, don't start new quiz
@@ -147,7 +164,7 @@ export default function Dashboard() {
         numberOfQuestions: count,
         difficulty: 'foundation',
       });
-      navigate(`/quiz/${response.data.data.quiz._id}`);
+      navigate(`/quiz/${response.data.data.quiz.id || response.data.data.quiz._id}`);
     } catch (error) {
       console.error('Failed to start quiz:', error);
       const errorMsg = error.response?.data?.message || 'Failed to start quiz';
@@ -158,7 +175,7 @@ export default function Dashboard() {
           errorMsg + ' Would you like to resume your unfinished quiz?'
         );
         if (confirmed && inProgressQuiz) {
-          navigate(`/quiz/${inProgressQuiz._id}`);
+          navigate(`/quiz/${inProgressQuiz.id || inProgressQuiz._id}`);
         }
       } else {
         alert(errorMsg);
@@ -196,18 +213,30 @@ export default function Dashboard() {
                 <div>
                   <h3 className="font-semibold text-lg">Resume Your Quiz</h3>
                   <p className="text-sm text-muted-foreground">
-                    You have an unfinished quiz with {inProgressQuiz.questions.length} questions
-                    {inProgressQuiz.settings?.category && ` in ${inProgressQuiz.settings.category}`}
+                    You have an unfinished quiz with {inProgressQuiz.quizQuestions?.length || inProgressQuiz.QuizQuestions?.length || inProgressQuiz.questions?.length || 0} questions
+                    {inProgressQuiz.category && ` in ${inProgressQuiz.category}`}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1" data-cy="resume-quiz-progress">
-                    Progress: {inProgressQuiz.questions.filter(q => q.userAnswer !== undefined && q.userAnswer !== null).length}/{inProgressQuiz.questions.length} answered
+                    Progress: {(inProgressQuiz.quizQuestions || inProgressQuiz.QuizQuestions || inProgressQuiz.questions || []).filter(q => q.userAnswer !== undefined && q.userAnswer !== null).length}/{inProgressQuiz.quizQuestions?.length || inProgressQuiz.QuizQuestions?.length || inProgressQuiz.questions?.length || 0} answered
                   </p>
                 </div>
               </div>
-              <Button onClick={() => navigate(`/quiz/${inProgressQuiz._id}`)} size="lg" data-cy="resume-quiz-button">
-                <PlayCircle className="mr-2 h-5 w-5" />
-                Resume Quiz
-              </Button>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={handleEndQuiz} 
+                  variant="outline" 
+                  size="lg" 
+                  className="border-red-200 text-red-600 hover:bg-red-50"
+                  data-cy="dashboard-end-quiz-button"
+                >
+                  <XCircle className="mr-2 h-5 w-5" />
+                  End Quiz
+                </Button>
+                <Button onClick={() => navigate(`/quiz/${inProgressQuiz.id || inProgressQuiz._id}`)} size="lg" data-cy="resume-quiz-button">
+                  <PlayCircle className="mr-2 h-5 w-5" />
+                  Resume Quiz
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

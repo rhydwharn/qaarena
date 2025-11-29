@@ -98,7 +98,7 @@ export default function Progress() {
       // Fetch details for up to 20 recent completed items lacking score info
       if (needDetail.length) {
         const toFetch = needDetail.slice(0, 20);
-        const details = await Promise.all(toFetch.map(q => getQuizDetailsSafe(q._id || q.id)));
+        const details = await Promise.all(toFetch.map(q => getQuizDetailsSafe(q.id || q._id)));
         details.forEach((dq, idx) => {
           if (dq && Array.isArray(dq.questions) && dq.questions.length) {
             const total = dq.questions.length;

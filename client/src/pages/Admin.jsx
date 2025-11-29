@@ -68,7 +68,9 @@ export default function Admin() {
   const loadAllQuestions = async () => {
     try {
       const response = await questionsAPI.getAll({ limit: 100 });
-      setAllQuestions(response.data.data.questions || []);
+      const questions = response.data.data.questions || [];
+      console.log('Loaded questions:', questions.slice(0, 2)); // Debug: check structure
+      setAllQuestions(questions);
     } catch (error) {
       console.error('Failed to load questions:', error);
     }
@@ -160,7 +162,7 @@ export default function Admin() {
 
     try {
       if (editingQuestion) {
-        await questionsAPI.update(editingQuestion._id, questionData);
+        await questionsAPI.update(editingQuestion.id || editingQuestion._id, questionData);
         alert('Question updated successfully!');
       } else {
         await questionsAPI.create(questionData);
@@ -233,7 +235,7 @@ export default function Admin() {
     if (selectedQuestions.length === allQuestions.length) {
       setSelectedQuestions([]);
     } else {
-      setSelectedQuestions(allQuestions.map(q => q._id));
+      setSelectedQuestions(allQuestions.map(q => q.id || q._id));
     }
   };
 
@@ -586,10 +588,10 @@ export default function Admin() {
               </Card>
             ) : (
               allQuestions.map((question) => (
-                <Card 
-                  key={question._id}
+                <Card
+                  key={question.id || question._id}
                   className={`${
-                    selectedQuestions.includes(question._id) ? 'ring-2 ring-primary' : ''
+                    selectedQuestions.includes(question.id || question._id) ? 'ring-2 ring-primary' : ''
                   }`}
                 >
                   <CardHeader>
@@ -597,8 +599,8 @@ export default function Admin() {
                       <div className="pt-1">
                         <input
                           type="checkbox"
-                          checked={selectedQuestions.includes(question._id)}
-                          onChange={() => toggleQuestionSelection(question._id)}
+                          checked={selectedQuestions.includes(question.id || question._id)}
+                          onChange={() => toggleQuestionSelection(question.id || question._id)}
                           className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
                         />
                       </div>
@@ -622,7 +624,7 @@ export default function Admin() {
                         <Button variant="outline" size="sm" onClick={() => handleEditQuestion(question)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDeleteQuestion(question._id)}>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteQuestion(question.id || question._id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

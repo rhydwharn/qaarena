@@ -383,11 +383,11 @@ const QuestionUpload = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {stats.byCategory.map((cat) => (
-                <div key={cat._id} className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-600 capitalize">{cat._id}</p>
-                  <p className="text-2xl font-bold text-gray-900">{cat.count}</p>
-                  <p className="text-xs text-gray-500">Avg: {cat.avgPoints?.toFixed(1) || 0} pts</p>
+              {stats.byCategory.map((cat, index) => (
+                <div key={cat._id || cat.id || index} className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 capitalize">{cat._id || cat.id || 'Unknown'}</p>
+                  <p className="text-2xl font-bold text-gray-900">{cat.count || 0}</p>
+                  <p className="text-xs text-gray-500">Avg: {typeof cat.avgPoints === 'number' ? cat.avgPoints.toFixed(1) : 0} pts</p>
                 </div>
               ))}
             </div>

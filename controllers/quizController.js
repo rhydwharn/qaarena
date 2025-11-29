@@ -115,6 +115,8 @@ exports.startQuiz = async (req, res, next) => {
 exports.answerQuestion = async (req, res, next) => {
   try {
     const { quizId, questionId, answer, timeSpent } = req.body;
+    
+    console.log('Answer request:', { quizId, questionId, answer, timeSpent });
 
     // Validate required fields
     if (!quizId || !questionId || answer === undefined) {
@@ -132,6 +134,8 @@ exports.answerQuestion = async (req, res, next) => {
         }]
       }]
     });
+    
+    console.log('Quiz found:', quiz ? 'Yes' : 'No');
 
     if (!quiz) {
       return next(new ErrorResponse('Quiz not found. It may have been deleted or expired.', 404));
@@ -152,12 +156,28 @@ exports.answerQuestion = async (req, res, next) => {
     }
 
     const question = quizQuestion.question;
+    
+    // Debug logging
+    console.log('Question options:', question.options);
+    
     const correctAnswers = question.options
       .filter(opt => opt.isCorrect)
       .map(opt => opt.optionIndex);
 
     const userAnswerArray = Array.isArray(answer) ? answer : [answer];
-    const isCorrect = JSON.stringify(userAnswerArray.sort()) === JSON.stringify(correctAnswers.sort());
+    
+    console.log('correctAnswers:', correctAnswers);
+    console.log('userAnswerArray before validation:', userAnswerArray);
+    
+    // Filter out null/undefined values
+    const validAnswers = userAnswerArray.filter(a => a !== null && a !== undefined);
+    console.log('validAnswers after filtering:', validAnswers);
+    
+    if (validAnswers.length === 0) {
+      return next(new ErrorResponse('No valid answer provided', 400));
+    }
+    
+    const isCorrect = JSON.stringify(validAnswers.sort()) === JSON.stringify(correctAnswers.sort());
 
     // Update quiz question
     quizQuestion.isCorrect = isCorrect;
@@ -166,11 +186,17 @@ exports.answerQuestion = async (req, res, next) => {
     await quizQuestion.save();
 
     // Save user answers
+    console.log('Saving answers for quizQuestion.id:', quizQuestion.id);
+    console.log('Valid answers to save:', validAnswers);
+    
     await QuizAnswer.destroy({ where: { quizQuestionId: quizQuestion.id } });
-    for (const ans of userAnswerArray) {
+    
+    for (const ans of validAnswers) {
+      console.log('Creating answer with optionIndex:', ans, 'Type:', typeof ans);
+      
       await QuizAnswer.create({
         quizQuestionId: quizQuestion.id,
-        selectedOption: ans
+        optionIndex: parseInt(ans)
       });
     }
 
@@ -182,6 +208,7 @@ exports.answerQuestion = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('Error in answerQuestion:', error);
     next(error);
   }
 };
@@ -213,16 +240,22 @@ exports.completeQuiz = async (req, res, next) => {
 
     // Calculate score
     const totalQuestions = quiz.quizQuestions.length;
-    const correctAnswers = quiz.quizQuestions.filter(qq => qq.isCorrect).length;
-    const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+    const correctAnswers = quiz.quizQuestions.filter(qq => qq.isCorrect === true).length;
+    const incorrectAnswers = quiz.quizQuestions.filter(qq => qq.isCorrect === false).length;
+    const unanswered = quiz.quizQuestions.filter(qq => qq.isCorrect === null).length;
+    const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
-    // Update quiz
+    console.log('Scoring:', { totalQuestions, correctAnswers, incorrectAnswers, unanswered, percentage });
+
+    // Update quiz with correct field names
     quiz.status = 'completed';
     quiz.completedAt = new Date();
     quiz.totalTime = Math.floor((quiz.completedAt - quiz.createdAt) / 1000);
-    quiz.correctAnswers = correctAnswers;
-    quiz.scorePercentage = percentage;
-    quiz.totalScore = correctAnswers * 10; // Assuming 10 points per question
+    quiz.correctCount = correctAnswers;
+    quiz.incorrectCount = incorrectAnswers;
+    quiz.unansweredCount = unanswered;
+    quiz.percentage = percentage;
+    quiz.totalPoints = correctAnswers * 10; // Assuming 10 points per question
     await quiz.save();
 
     // Update user stats
@@ -230,7 +263,7 @@ exports.completeQuiz = async (req, res, next) => {
     user.totalQuizzes += 1;
     user.totalQuestions += totalQuestions;
     user.correctAnswers += correctAnswers;
-    user.totalScore += quiz.totalScore;
+    user.totalScore += quiz.totalPoints;
     user.updateAverageScore();
     await user.save();
 
@@ -333,9 +366,51 @@ exports.getQuiz = async (req, res, next) => {
       return next(new ErrorResponse('You do not have permission to view this quiz', 403));
     }
 
+    // Transform quiz data to include text from translations
+    console.log('========== Starting quiz transformation ==========');
+    const transformedQuiz = quiz.toJSON();
+    console.log('Quiz has', transformedQuiz.quizQuestions?.length, 'questions');
+    
+    if (transformedQuiz.quizQuestions && transformedQuiz.quizQuestions.length > 0) {
+      const firstQ = transformedQuiz.quizQuestions[0].question;
+      console.log('First question translations:', firstQ.translations);
+      console.log('First question options count:', firstQ.options?.length);
+      if (firstQ.options && firstQ.options.length > 0) {
+        console.log('First option raw:', JSON.stringify(firstQ.options[0], null, 2));
+      }
+    }
+    
+    transformedQuiz.quizQuestions = transformedQuiz.quizQuestions.map(qq => {
+      const question = qq.question;
+      
+      // Get English translation or first available
+      const questionTranslation = question.translations?.find(t => t.language === 'en') || question.translations?.[0];
+      question.questionText = questionTranslation?.questionText || question.questionText || '';
+      question.explanation = questionTranslation?.explanation || question.explanation || '';
+      
+      // Transform options
+      if (question.options) {
+        question.options = question.options.map(opt => {
+          const optTranslation = opt.translations?.find(t => t.language === 'en') || opt.translations?.[0];
+          console.log('Option', opt.optionIndex, '- Translation:', optTranslation);
+          return {
+            id: opt.id,
+            optionIndex: opt.optionIndex,
+            text: optTranslation?.optionText || optTranslation?.text || opt.text || `Option ${opt.optionIndex}`,
+            isCorrect: opt.isCorrect
+          };
+        });
+      }
+      
+      return qq;
+    });
+    
+    console.log('Sample transformed options:', transformedQuiz.quizQuestions[0]?.question?.options);
+    console.log('========== End quiz transformation ==========');
+
     res.status(200).json({ 
       success: true, 
-      data: { quiz } 
+      data: { quiz: transformedQuiz } 
     });
   } catch (error) {
     next(error);
@@ -408,6 +483,39 @@ exports.getInProgressQuiz = async (req, res, next) => {
       }],
       order: [['createdAt', 'DESC']]
     });
+
+    // Transform quiz data to include text from translations (same as getQuiz)
+    if (quiz) {
+      const transformedQuiz = quiz.toJSON();
+      transformedQuiz.quizQuestions = transformedQuiz.quizQuestions.map(qq => {
+        const question = qq.question;
+        
+        // Get English translation or first available
+        const questionTranslation = question.translations?.find(t => t.language === 'en') || question.translations?.[0];
+        question.questionText = questionTranslation?.questionText || question.questionText || '';
+        question.explanation = questionTranslation?.explanation || question.explanation || '';
+        
+        // Transform options
+        if (question.options) {
+          question.options = question.options.map(opt => {
+            const optTranslation = opt.translations?.find(t => t.language === 'en') || opt.translations?.[0];
+            return {
+              id: opt.id,
+              optionIndex: opt.optionIndex,
+              text: optTranslation?.optionText || optTranslation?.text || opt.text || `Option ${opt.optionIndex}`,
+              isCorrect: opt.isCorrect
+            };
+          });
+        }
+        
+        return qq;
+      });
+      
+      return res.status(200).json({
+        success: true,
+        data: { quiz: transformedQuiz }
+      });
+    }
 
     res.status(200).json({
       success: true,
