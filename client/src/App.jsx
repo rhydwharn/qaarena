@@ -30,6 +30,7 @@ import SchoolManagementSimulator from './pages/automation-arena/simulators/Schoo
 import ATMSimulator from './pages/automation-arena/simulators/ATMSimulator';
 import FundsTransferSimulator from './pages/automation-arena/simulators/FundsTransferSimulator';
 import AuthSimulator from './pages/automation-arena/simulators/AuthSimulator';
+import { analyticsAPI } from './services/api';
 
 // Lazy load Admin page
 const Admin = lazy(() => import('./pages/Admin'));
@@ -40,6 +41,19 @@ function ScrollToTop() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location.pathname]);
+
+  return null;
+}
+
+// Track site visits on route change
+function TrackVisit() {
+  const location = useLocation();
+
+  useEffect(() => {
+    analyticsAPI.recordVisit(location.pathname).catch(() => {
+      // Ignore tracking errors in the UI
+    });
   }, [location.pathname]);
 
   return null;
@@ -67,6 +81,7 @@ function App() {
     <AuthProvider>
       <Router basename={routerBasename}>
         <ScrollToTop />
+        <TrackVisit />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />

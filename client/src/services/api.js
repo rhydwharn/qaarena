@@ -137,6 +137,7 @@ export const adminAPI = {
   createAchievement: (data) => api.post('/admin/achievements', data),
   updateAchievement: (id, data) => api.put(`/admin/achievements/${id}`, data),
   deleteAchievement: (id) => api.delete(`/admin/achievements/${id}`),
+  getSiteVisits: (params) => api.get('/admin/site-visits', { params }),
 };
 
 // Functional Bugs API (for FunctionalBugScenario page)
@@ -152,6 +153,11 @@ export const functionalBugsAPI = {
   create: (data) => api.post('/functional-bugs', data),
   update: (bugId, data) => api.put(`/functional-bugs/${bugId}`, data),
   delete: (bugId) => api.delete(`/functional-bugs/${bugId}`),
+};
+
+// Analytics API
+export const analyticsAPI = {
+  recordVisit: (path) => api.post('/analytics/visit', { path }),
 };
 
 // Simple health-check helper
@@ -180,5 +186,6 @@ export default {
   achievements: achievementsAPI,
   admin: adminAPI,
   functionalBugs: functionalBugsAPI,
+  analytics: analyticsAPI,
   testConnection,
 };

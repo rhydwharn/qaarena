@@ -5,8 +5,15 @@ const { sequelize } = require('../config/mysqlDatabase');
 const ErrorResponse = require('../utils/errorResponse');
 const { Op } = require('sequelize');
 
+const getJwtSecret = () => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not configured');
+  }
+  return process.env.JWT_SECRET;
+};
+
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id }, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
 };

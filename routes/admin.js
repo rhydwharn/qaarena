@@ -9,7 +9,8 @@ const {
   reviewQuestion,
   createAchievement,
   updateAchievement,
-  deleteAchievement
+  deleteAchievement,
+  getSiteVisitStats
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -25,5 +26,6 @@ router.put('/questions/:id/review', reviewQuestion);
 router.post('/achievements', createAchievement);
 router.put('/achievements/:id', updateAchievement);
 router.delete('/achievements/:id', deleteAchievement);
+router.get('/site-visits', getSiteVisitStats);
 
 module.exports = router;

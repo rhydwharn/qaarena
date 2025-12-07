@@ -29,6 +29,7 @@ export default function Admin() {
     difficulty: 'foundation',
     tags: '',
   });
+  const [visitStats, setVisitStats] = useState({ total: 0, buckets: [] });
 
   useEffect(() => {
     loadAdminData();
@@ -49,10 +50,11 @@ export default function Admin() {
   const loadAdminData = async () => {
     try {
       setLoading(true);
-      const [statsRes, usersRes, flaggedRes] = await Promise.all([
+      const [statsRes, usersRes, flaggedRes, visitsRes] = await Promise.all([
         adminAPI.getStats(),
         adminAPI.getUsers(),
         adminAPI.getFlaggedQuestions(),
+        adminAPI.getSiteVisits({ groupBy: 'day' }),
       ]);
 
       const apiStats = statsRes.data.data || {};
@@ -63,9 +65,11 @@ export default function Admin() {
         publishedQuestions: apiStats.questions?.published ?? 0,
         totalQuizzes: apiStats.quizzes?.total ?? 0,
         completedQuizzes: apiStats.quizzes?.completed ?? 0,
+        totalSiteVisits: apiStats.siteVisits?.total ?? 0,
       });
       setUsers(usersRes.data.data.users || []);
       setFlaggedQuestions(flaggedRes.data.data.questions || []);
+      setVisitStats(visitsRes.data.data || { total: 0, buckets: [] });
     } catch (error) {
       console.error('Failed to load admin data:', error);
     } finally {
@@ -357,6 +361,21 @@ export default function Admin() {
             <CardContent>
               <div className="text-2xl font-bold">{flaggedQuestions.length}</div>
               <p className="text-xs text-muted-foreground">Needs review</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Site Visits</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.totalSiteVisits || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                {visitStats.buckets?.length
+                  ? `Last period: ${visitStats.buckets[visitStats.buckets.length - 1].count} visits`
+                  : 'Tracking since first deployment'}
+              </p>
             </CardContent>
           </Card>
         </div>

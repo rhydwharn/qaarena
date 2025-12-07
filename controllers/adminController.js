@@ -1,5 +1,5 @@
 // MySQL Models
-const { User, Question, Quiz, Achievement, AchievementTranslation } = require('../models/mysql');
+const { User, Question, Quiz, Achievement, AchievementTranslation, SiteVisit } = require('../models/mysql');
 const ErrorResponse = require('../utils/errorResponse');
 const { Op } = require('sequelize');
 
@@ -11,14 +11,73 @@ exports.getStats = async (req, res, next) => {
     const publishedQuestions = await Question.count({ where: { status: 'published' } });
     const totalQuizzes = await Quiz.count();
     const completedQuizzes = await Quiz.count({ where: { status: 'completed' } });
+    const totalSiteVisits = await SiteVisit.count();
 
     res.status(200).json({
       status: 'success',
       data: {
         users: { total: totalUsers, active: activeUsers },
         questions: { total: totalQuestions, published: publishedQuestions },
-        quizzes: { total: totalQuizzes, completed: completedQuizzes }
+        quizzes: { total: totalQuizzes, completed: completedQuizzes },
+        siteVisits: { total: totalSiteVisits }
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/admin/site-visits
+// Returns aggregated visit stats grouped by hour/day/month/year
+exports.getSiteVisitStats = async (req, res, next) => {
+  try {
+    const { from, to, groupBy = 'day' } = req.query;
+
+    let format;
+    switch (groupBy) {
+      case 'hour':
+        format = '%Y-%m-%d %H:00:00';
+        break;
+      case 'month':
+        format = '%Y-%m-01';
+        break;
+      case 'year':
+        format = '%Y-01-01';
+        break;
+      default:
+        format = '%Y-%m-%d';
+    }
+
+    const where = {};
+    if (from) {
+      where.visitedAt = { [Op.gte]: new Date(from) };
+    }
+    if (to) {
+      where.visitedAt = {
+        ...(where.visitedAt || {}),
+        [Op.lte]: new Date(to),
+      };
+    }
+
+    const buckets = await SiteVisit.findAll({
+      where,
+      attributes: [
+        [SiteVisit.sequelize.fn('DATE_FORMAT', SiteVisit.sequelize.col('visited_at'), format), 'bucket'],
+        [SiteVisit.sequelize.fn('COUNT', SiteVisit.sequelize.col('*')), 'count'],
+      ],
+      group: ['bucket'],
+      order: [[SiteVisit.sequelize.literal('bucket'), 'ASC']],
+      raw: true,
+    });
+
+    const total = await SiteVisit.count({ where });
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        total,
+        buckets,
+      },
     });
   } catch (error) {
     next(error);

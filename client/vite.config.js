@@ -10,18 +10,11 @@ export default defineConfig(() => ({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'https://korrekttech.com',
+        // In development, proxy API calls to the local backend
+        target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '/backend/api'),
-        configure: (proxy) => {
-          proxy.on('error', (err) => {
-            console.error('Proxy Error:', err);
-          });
-          proxy.on('proxyReq', (proxyReq) => {
-            console.log('Proxying request to:', proxyReq.path);
-          });
-        }
+        // Keep /api prefix as-is (matches backend routes: /api/*)
       }
     }
   }

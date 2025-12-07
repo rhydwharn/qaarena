@@ -17,6 +17,7 @@ const adminRoutes = require('./routes/admin');
 const functionalBugRoutes = require('./routes/functionalBugs');
 const questionUploadRoutes = require('./routes/questionUpload');
 const arenaAuthRoutes = require('./routes/arenaAuth');
+const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use(`${basePath}/api/admin`, adminRoutes);
 app.use(`${basePath}/api/functional-bugs`, functionalBugRoutes);
 app.use(`${basePath}/api/questions-upload`, questionUploadRoutes);
 app.use(`${basePath}/api/arena-auth`, arenaAuthRoutes);
+app.use(`${basePath}/api/analytics`, analyticsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

@@ -5,6 +5,13 @@ const { ArenaUser } = require('../models/mysql');
 const { Op } = require('sequelize');
 const { sendOTPEmail, sendTokenEmail } = require('../services/arenaEmailService');
 
+const getJwtSecret = () => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not configured');
+  }
+  return process.env.JWT_SECRET;
+};
+
 /**
  * Generate 6-digit OTP
  */
@@ -197,7 +204,7 @@ exports.verifyOTP = async (req, res) => {
     // Generate JWT for login
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'arena-secret-key',
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -260,7 +267,7 @@ exports.verifyToken = async (req, res) => {
     // Generate JWT for login
     const jwtToken = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'arena-secret-key',
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -327,7 +334,7 @@ exports.signin = async (req, res) => {
     // Generate JWT
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'arena-secret-key',
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 

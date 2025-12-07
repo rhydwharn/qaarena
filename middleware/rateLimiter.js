@@ -1,8 +1,10 @@
 const rateLimit = require('express-rate-limit');
 
+const isProd = process.env.NODE_ENV === 'production';
+
 exports.apiLimiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
   message: {
     status: 'error',
     message: 'Too many requests from this IP, please try again later'
@@ -12,8 +14,8 @@ exports.apiLimiter = rateLimit({
 });
 
 exports.authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
+  windowMs: isProd ? 15 * 60 * 1000 : 60 * 1000,
+  max: isProd ? 5 : 100,
   message: {
     status: 'error',
     message: 'Too many authentication attempts, please try again later'

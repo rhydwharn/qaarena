@@ -14,6 +14,7 @@ const Progress = require('./Progress');
 const CategoryProgress = require('./CategoryProgress');
 const DifficultyProgress = require('./DifficultyProgress');
 const RecentActivity = require('./RecentActivity');
+const SiteVisit = require('./SiteVisit');
 const FunctionalBug = require('./FunctionalBug');
 const BugStep = require('./BugStep');
 const BugHint = require('./BugHint');
@@ -158,6 +159,16 @@ RecentActivity.belongsTo(Progress, {
   foreignKey: 'progressId'
 });
 
+// User <-> SiteVisit (One-to-Many)
+User.hasMany(SiteVisit, {
+  foreignKey: 'userId',
+  as: 'siteVisits'
+});
+SiteVisit.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
 // User <-> FunctionalBug (One-to-Many)
 User.hasMany(FunctionalBug, {
   foreignKey: 'createdBy',
@@ -259,6 +270,7 @@ module.exports = {
   CategoryProgress,
   DifficultyProgress,
   RecentActivity,
+  SiteVisit,
   FunctionalBug,
   BugStep,
   BugHint,
