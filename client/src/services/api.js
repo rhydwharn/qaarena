@@ -1,8 +1,11 @@
 import axios from 'axios';
 
-// Use relative URL in development (proxied by Vite via vite.config.js)
-// In production, always hit the live backend
-const API_URL = import.meta.env.DEV ? '/api' : 'https://korrekttech.com/backend/api';
+// Base API URL
+// - In development: use relative URL, proxied by Vite via vite.config.js
+// - In production: prefer VITE_API_URL, fall back to the deployed backend path
+const API_URL = import.meta.env.DEV
+  ? '/api'
+  : (import.meta.env.VITE_API_URL || 'https://qaarena.online/nodebackend/api');
 
 // Single axios instance used everywhere
 const api = axios.create({

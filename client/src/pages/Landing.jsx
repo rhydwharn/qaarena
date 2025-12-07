@@ -78,26 +78,37 @@ export default function Landing() {
     <div className="min-h-screen bg-white" data-cy="landing-page">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <img src="/web_logo.png" alt="QA ARENA" className="h-10 w-10 object-contain rounded-lg" />
-            <span className="text-xl font-bold text-gray-900">QA ARENA</span>
+            <span className="text-lg sm:text-xl font-bold text-gray-900 truncate">QA ARENA</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end flex-wrap">
             {!user ? (
               <>
                 <Link to="/login">
-                  <Button variant="outline" size="lg" className="text-lg px-8 py-6" data-cy="landing-login-button">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="text-sm sm:text-lg px-4 py-2 sm:px-8 sm:py-6"
+                    data-cy="landing-login-button"
+                  >
                     Login
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button size="lg" className="text-lg px-8 py-6" data-cy="landing-get-started-button">Sign Up</Button>
+                  <Button
+                    size="lg"
+                    className="text-sm sm:text-lg px-4 py-2 sm:px-8 sm:py-6"
+                    data-cy="landing-get-started-button"
+                  >
+                    Sign Up
+                  </Button>
                 </Link>
               </>
             ) : (
               <Link to="/dashboard">
-                <Button size="lg" className="text-lg px-8 py-6">
+                <Button size="lg" className="text-sm sm:text-lg px-4 py-2 sm:px-8 sm:py-6">
                   <Trophy className="h-5 w-5 mr-2" />
                   Go to Dashboard
                 </Button>
