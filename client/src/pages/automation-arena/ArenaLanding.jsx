@@ -1,11 +1,19 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Code2, CheckCircle, BookOpen, Users, ShoppingCart, GraduationCap, CreditCard, ArrowLeftRight, Zap, Lock } from 'lucide-react';
+import { Code2, CheckCircle, BookOpen, Users, ShoppingCart, GraduationCap, CreditCard, ArrowLeftRight, Zap, Lock, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ArenaLanding() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const getDisplayName = (u) => {
+    if (!u) return '';
+    const first = u.firstName || u.name || u.username || '';
+    const last = u.lastName || '';
+    const full = `${first} ${last}`.trim();
+    return full || u.email || '';
+  };
   const features = [
     {
       icon: <Lock className="h-12 w-12 text-pink-500" />,
@@ -81,16 +89,23 @@ export default function ArenaLanding() {
           </Link>
           <div className="flex items-center gap-3">
             {user ? (
-              // Logged in to main app - show direct access
+              // Logged in to main app - show name + logout (same pattern as navbar)
               <>
                 <span className="text-sm text-gray-600" data-cy="arena-welcome-user">
-                  Welcome, {user.name || user.email}
+                  {getDisplayName(user)}
                 </span>
-                <Link to="/arena/dashboard">
-                  <Button size="lg" data-cy="arena-access-button">
-                    Access Simulators
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => {
+                    logout();
+                    navigate('/');
+                  }}
+                  data-cy="arena-logout-button"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
               </>
             ) : (
               // Not logged in - show auth simulator options

@@ -9,6 +9,14 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const getDisplayName = (u) => {
+    if (!u) return '';
+    const first = u.firstName || u.name || u.username || '';
+    const last = u.lastName || '';
+    const full = `${first} ${last}`.trim();
+    return full || u.email || '';
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -25,7 +33,7 @@ export default function Navbar() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2 font-bold text-lg sm:text-xl" data-cy="navbar-logo">
-              <img src="/web_logo.png" alt="App logo" className="h-6 w-6 object-contain" />
+              <img src={`${import.meta.env.BASE_URL || '/'}web_logo.png`} alt="App logo" className="h-6 w-6 object-contain" />
               <span className="truncate">QA ARENA</span>
             </Link>
             {user && (
@@ -83,7 +91,7 @@ export default function Navbar() {
               <>
                 <div className="hidden sm:flex items-center gap-2 text-sm" data-cy="navbar-username">
                   <User className="h-4 w-4" />
-                  <span className="font-medium truncate max-w-[100px]">{user.username}</span>
+                  <span className="font-medium truncate max-w-[120px]">{getDisplayName(user)}</span>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:flex" data-cy="navbar-logout-button">
                   <LogOut className="h-4 w-4 mr-2" />
@@ -172,7 +180,7 @@ export default function Navbar() {
             <div className="border-t pt-2 mt-2">
               <div className="flex items-center gap-2 px-3 py-2 text-sm">
                 <User className="h-4 w-4" />
-                <span className="font-medium">{user.username}</span>
+                <span className="font-medium">{getDisplayName(user)}</span>
               </div>
               <Button variant="outline" size="sm" onClick={handleLogout} className="w-full justify-start" data-cy="navbar-mobile-logout">
                 <LogOut className="h-4 w-4 mr-2" />

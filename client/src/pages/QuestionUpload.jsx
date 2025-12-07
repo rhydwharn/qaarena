@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Upload, Download, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import axios from 'axios';
+import { questionsAPI } from '../services/api';
 
 const QuestionUpload = () => {
   const [file, setFile] = useState(null);
@@ -17,13 +17,19 @@ const QuestionUpload = () => {
 
   const fetchStats = async () => {
     try {
+      const apiUrl = import.meta.env.DEV ? '/api' : 'https://korrekttech.com/backend/api';
       const token = localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-      const response = await axios.get(
+      const response = await fetch(
         `${apiUrl}/questions-upload/stats`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setStats(response.data.data);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch stats');
+      }
+      
+      const data = await response.json();
+      setStats(data.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
@@ -87,21 +93,9 @@ const QuestionUpload = () => {
     setUploadResult(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const token = localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-      const response = await axios.post(
-        `${apiUrl}/questions-upload/upload`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await questionsAPI.upload(file, (progress) => {
+        console.log(`Upload progress: ${progress}%`);
+      });
 
       setUploadResult(response.data.data);
       setFile(null);
@@ -131,20 +125,24 @@ const QuestionUpload = () => {
         return;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const apiUrl = import.meta.env.DEV ? '/api' : 'https://korrekttech.com/backend/api';
       console.log('Downloading template from:', `${apiUrl}/questions-upload/template`);
       
-      const response = await axios.get(
+      const response = await fetch(
         `${apiUrl}/questions-upload/template`,
         {
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob'
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
       console.log('Response received:', response);
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      if (!response.ok) {
+        throw new Error('Failed to download template');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', 'questions_template.xlsx');

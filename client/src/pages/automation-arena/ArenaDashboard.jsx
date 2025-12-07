@@ -1,29 +1,54 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { ShoppingCart, GraduationCap, CreditCard, ArrowLeftRight, LogOut, User, Play, CheckCircle, Clock, Trophy, Lock } from 'lucide-react';
 
 export default function ArenaDashboard() {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState(null);
 
+  const getDisplayName = (u) => {
+    if (!u) return '';
+    const first = u.firstName || u.name || u.username || '';
+    const last = u.lastName || '';
+    const full = `${first} ${last}`.trim();
+    return full || u.email || '';
+  };
+
   useEffect(() => {
-    // Check if user is authenticated (optional for demo)
-    const token = localStorage.getItem('arena_auth_token');
-    const userData = localStorage.getItem('arena_user');
-    
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-    } else {
-      // Set demo user for testing
+    // 1) Prefer main app authenticated user
+    if (authUser) {
       setUser({
-        email: 'demo@arena.com',
-        firstName: 'Demo',
-        lastName: 'User'
+        email: authUser.email,
+        firstName: authUser.firstName || authUser.name || 'QA',
+        lastName: authUser.lastName || 'User'
       });
+      return;
     }
-  }, [navigate]);
+
+    // 2) Fallback to arena-specific user (if using separate arena auth)
+    const arenaToken = localStorage.getItem('arena_auth_token');
+    const arenaUserData = localStorage.getItem('arena_user');
+    if (arenaToken && arenaUserData) {
+      try {
+        const parsed = JSON.parse(arenaUserData);
+        setUser(parsed);
+        return;
+      } catch {
+        // ignore parse error and fall through to demo user
+      }
+    }
+
+    // 3) Final fallback: demo user when no current user
+    setUser({
+      email: 'demo@arena.com',
+      firstName: 'Demo',
+      lastName: 'User'
+    });
+  }, [authUser]);
 
   const handleLogout = () => {
     localStorage.removeItem('arena_auth_token');
@@ -136,7 +161,7 @@ export default function ArenaDashboard() {
             <div className="flex items-center gap-2" data-cy="arena-dashboard-user-info">
               <User className="h-5 w-5 text-gray-500" />
               <span className="text-sm font-medium text-gray-700" data-cy="arena-dashboard-user-name">
-                {user.firstName} {user.lastName}
+                {getDisplayName(user)}
               </span>
             </div>
             <Button 
@@ -154,10 +179,10 @@ export default function ArenaDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Welcome Section */}
+        {/* Intro Section */}
         <div className="mb-8" data-cy="arena-dashboard-welcome">
           <h1 className="text-3xl font-bold text-gray-900 mb-2" data-cy="arena-dashboard-welcome-title">
-            Welcome back, {user.firstName}! 👋
+            Test Automation Arena Dashboard
           </h1>
           <p className="text-gray-600" data-cy="arena-dashboard-welcome-subtitle">
             Choose a simulator below to start practicing test automation
@@ -193,7 +218,7 @@ export default function ArenaDashboard() {
             Available Simulators
           </h2>
           <div className="grid md:grid-cols-2 gap-6" data-cy="arena-dashboard-simulators-grid">
-            {simulators.map((simulator, index) => (
+            {simulators.map((simulator) => (
               <Card 
                 key={simulator.id}
                 className={`${simulator.color} border-2 hover:shadow-lg transition-all duration-300`}

@@ -35,7 +35,10 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/api/health', (req, res) => {
+// Support both with and without /qaarena prefix
+const basePath = process.env.BASE_PATH || '';
+
+app.get(`${basePath}/api/health`, (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'ISTQB Practice API is running',
@@ -43,16 +46,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/questions', questionRoutes);
-app.use('/api/quiz', quizRoutes);
-app.use('/api/progress', progressRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/achievements', achievementRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/functional-bugs', functionalBugRoutes);
-app.use('/api/questions-upload', questionUploadRoutes);
-app.use('/api/arena-auth', arenaAuthRoutes);
+app.use(`${basePath}/api/auth`, authRoutes);
+app.use(`${basePath}/api/questions`, questionRoutes);
+app.use(`${basePath}/api/quiz`, quizRoutes);
+app.use(`${basePath}/api/progress`, progressRoutes);
+app.use(`${basePath}/api/leaderboard`, leaderboardRoutes);
+app.use(`${basePath}/api/achievements`, achievementRoutes);
+app.use(`${basePath}/api/admin`, adminRoutes);
+app.use(`${basePath}/api/functional-bugs`, functionalBugRoutes);
+app.use(`${basePath}/api/questions-upload`, questionUploadRoutes);
+app.use(`${basePath}/api/arena-auth`, arenaAuthRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

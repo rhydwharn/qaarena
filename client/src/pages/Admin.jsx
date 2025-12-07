@@ -55,7 +55,15 @@ export default function Admin() {
         adminAPI.getFlaggedQuestions(),
       ]);
 
-      setStats(statsRes.data.data);
+      const apiStats = statsRes.data.data || {};
+      setStats({
+        totalUsers: apiStats.users?.total ?? 0,
+        activeUsers: apiStats.users?.active ?? 0,
+        totalQuestions: apiStats.questions?.total ?? 0,
+        publishedQuestions: apiStats.questions?.published ?? 0,
+        totalQuizzes: apiStats.quizzes?.total ?? 0,
+        completedQuizzes: apiStats.quizzes?.completed ?? 0,
+      });
       setUsers(usersRes.data.data.users || []);
       setFlaggedQuestions(flaggedRes.data.data.questions || []);
     } catch (error) {

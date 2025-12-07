@@ -30,13 +30,13 @@ export default function Landing() {
   };
 
   const features = [
-    {
-      icon: <Download className="h-8 w-8" />,
-      title: 'Download QA Materials',
-      description: 'Access comprehensive study materials, guides, and resources for your QA journey.',
-      color: 'bg-teal-500',
-      link: '#'
-    },
+    // {
+    //   icon: <Download className="h-8 w-8" />,
+    //   title: 'Download QA Materials',
+    //   description: 'Access comprehensive study materials, guides, and resources for your QA journey.',
+    //   color: 'bg-teal-500',
+    //   link: '#'
+    // },
     {
       icon: <Bug className="h-8 w-8" />,
       title: 'Bug Hunting Arena',
@@ -51,13 +51,13 @@ export default function Landing() {
       color: 'bg-green-500',
       link: '/questions'
     },
-    {
-      icon: <MessageSquare className="h-8 w-8" />,
-      title: 'Interview Questions',
-      description: 'Prepare for your next QA interview with our curated collection of questions and answers.',
-      color: 'bg-purple-500',
-      link: '#'
-    },
+    // {
+    //   icon: <MessageSquare className="h-8 w-8" />,
+    //   title: 'Interview Questions',
+    //   description: 'Prepare for your next QA interview with our curated collection of questions and answers.',
+    //   color: 'bg-purple-500',
+    //   link: '#'
+    // },
     {
       icon: <Code2 className="h-8 w-8" />,
       title: 'Test Automation Arena',

@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
@@ -34,6 +34,17 @@ import AuthSimulator from './pages/automation-arena/simulators/AuthSimulator';
 // Lazy load Admin page
 const Admin = lazy(() => import('./pages/Admin'));
 
+// Scroll to top on route change
+function ScrollToTop() {
+  const location = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location.pathname]);
+
+  return null;
+}
+
 // Admin route protection
 function AdminRoute({ children }) {
   const { user } = useAuth();
@@ -50,9 +61,12 @@ function AdminRoute({ children }) {
 }
 
 function App() {
+  const routerBasename = '/';
+
   return (
     <AuthProvider>
-      <Router>
+      <Router basename={routerBasename}>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />

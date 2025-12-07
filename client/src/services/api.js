@@ -1,64 +1,93 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || 'http://localhost:5001/api';
+// Use relative URL in development (proxied by Vite via vite.config.js)
+// In production, always hit the live backend
+const API_URL = import.meta.env.DEV ? '/api' : 'https://korrekttech.com/backend/api';
 
+// Single axios instance used everywhere
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
+    Accept: 'application/json',
   },
+  withCredentials: true,
+  timeout: 30000,
 });
 
-// Request interceptor to add token
+// Attach auth token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-// Response interceptor for error handling
+// Centralised error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Only redirect to login if we're on a protected route
-      const publicRoutes = ['/', '/login', '/register', '/bug-hunting', '/functional-bug-hunting', '/events'];
-      const currentPath = window.location.pathname;
-      const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route));
-      
-      if (!isPublicRoute) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
+    if (error?.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    if (import.meta.env.DEV) {
+      // Extra logging in dev only
+      console.error('API error', {
+        message: error.message,
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
     }
     return Promise.reject(error);
-  }
+  },
 );
+
+// ---------- Feature-specific API groups ----------
 
 // Auth API
 export const authAPI = {
-  register: (data) => api.post('/auth/register', data),
-  login: (data) => api.post('/auth/login', data),
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  // Current user profile
   getMe: () => api.get('/auth/me'),
+  getProfile: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
   changePassword: (data) => api.put('/auth/change-password', data),
 };
 
-// Questions API
+// Questions + upload
+const uploadFile = (file, onProgress) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return api.post('/questions-upload/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (evt) => {
+      if (!onProgress || !evt.total) return;
+      const percent = Math.round((evt.loaded * 100) / evt.total);
+      onProgress(percent);
+    },
+  });
+};
+
 export const questionsAPI = {
+  upload: uploadFile,
+  // Generic fetch with optional filters/pagination
   getAll: (params) => api.get('/questions', { params }),
+  list: (params) => api.get('/questions', { params }),
   getById: (id) => api.get(`/questions/${id}`),
   create: (data) => api.post('/questions', data),
   update: (id, data) => api.put(`/questions/${id}`, data),
   delete: (id) => api.delete(`/questions/${id}`),
-  vote: (id, voteType) => api.post(`/questions/${id}/vote`, { voteType }),
-  flag: (id, reason) => api.post(`/questions/${id}/flag`, { reason }),
 };
 
 // Quiz API
@@ -94,7 +123,7 @@ export const achievementsAPI = {
   check: () => api.post('/achievements/check'),
 };
 
-// Admin API
+// Admin API (used by Admin.jsx)
 export const adminAPI = {
   getStats: () => api.get('/admin/stats'),
   getUsers: (params) => api.get('/admin/users', { params }),
@@ -107,7 +136,7 @@ export const adminAPI = {
   deleteAchievement: (id) => api.delete(`/admin/achievements/${id}`),
 };
 
-// Functional Bugs API
+// Functional Bugs API (for FunctionalBugScenario page)
 export const functionalBugsAPI = {
   getAll: (params) => api.get('/functional-bugs', { params }),
   getById: (bugId) => api.get(`/functional-bugs/${bugId}`),
@@ -122,4 +151,31 @@ export const functionalBugsAPI = {
   delete: (bugId) => api.delete(`/functional-bugs/${bugId}`),
 };
 
-export default api;
+// Simple health-check helper
+export const testConnection = async () => {
+  try {
+    const response = await api.get('/health');
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    };
+  }
+};
+
+// Default export: grouped clients + raw axios instance
+export default {
+  ...api,
+  auth: authAPI,
+  questions: questionsAPI,
+  quiz: quizAPI,
+  progress: progressAPI,
+  leaderboard: leaderboardAPI,
+  achievements: achievementsAPI,
+  admin: adminAPI,
+  functionalBugs: functionalBugsAPI,
+  testConnection,
+};

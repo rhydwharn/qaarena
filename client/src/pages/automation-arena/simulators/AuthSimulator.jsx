@@ -8,6 +8,14 @@ import { ArrowLeft, Mail, Lock, User, CheckCircle, AlertCircle, Loader2, Key, Li
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
+const getDisplayName = (u) => {
+  if (!u) return '';
+  const first = u.firstName || u.name || u.username || '';
+  const last = u.lastName || '';
+  const full = `${first} ${last}`.trim();
+  return full || u.email || '';
+};
+
 export default function AuthSimulator() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -340,7 +348,7 @@ export default function AuthSimulator() {
                 {mode === 'real' && (
                   <div className="p-4 bg-green-50 border-2 border-green-300 rounded-md">
                     <h3 className="font-semibold text-green-900 mb-2">
-                      ✅ Real Mode {mainAppUser && `- Welcome, ${mainAppUser.username || mainAppUser.name || mainAppUser.email}!`}
+                      ✅ Real Mode {mainAppUser && `- Welcome, ${getDisplayName(mainAppUser)}!`}
                     </h3>
                     <p className="text-sm text-green-800">
                       You're logged in! Emails will be sent to real inboxes using the configured email service.

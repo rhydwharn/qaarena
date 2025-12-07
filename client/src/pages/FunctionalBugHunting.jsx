@@ -281,7 +281,7 @@ const FunctionalBugHunting = () => {
 
                   {/* Scenario Preview */}
                   <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                    {bug.scenario.description}
+                    {bug.scenario_description || bug.scenarioDescription || bug.scenario || 'No scenario description available.'}
                   </p>
 
                   {/* Action Button */}
