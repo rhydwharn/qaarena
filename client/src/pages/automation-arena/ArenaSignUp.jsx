@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { PasswordInput } from '../../components/ui/password-input';
 import { Label } from '../../components/ui/label';
 import { Mail, Lock, User, ArrowLeft, CheckCircle } from 'lucide-react';
 
@@ -229,10 +230,9 @@ export default function ArenaSignUp() {
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input
+                  <PasswordInput
                     id="password"
                     name="password"
-                    type="password"
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={handleChange}
@@ -254,10 +254,9 @@ export default function ArenaSignUp() {
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input
+                  <PasswordInput
                     id="confirmPassword"
                     name="confirmPassword"
-                    type="password"
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={handleChange}
